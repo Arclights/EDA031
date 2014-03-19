@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <sstream>
 #include <iterator>
+#include <vector>
 
 using namespace std;
 
@@ -27,47 +28,160 @@ string MessageHandler::readArguments(const shared_ptr<Connection>& conn){
 	return "";
 }
 
-int MessageHandler::readCommand(const shared_ptr<Connection>& conn){
+int readByte(const shared_ptr<Connection>& conn){
 	unsigned char byte1 = conn->read();
 	return byte1;
 }
 
-string MessageHandler::readString(const shared_ptr<Connection>& conn) {
+vector<string> splitString(string& str){
+	istringstream buf(str);
+    istream_iterator<string> beg(buf), end;
+	vector<string> arguments(beg, end);
+	return arguments;
+}
+
+string readString(const shared_ptr<Connection>& conn, int charsToRead) {
 	string s;
 	char ch;
-	while ((ch = conn->read()) != protocol.COM_END) {
+	int charsRead = 0;
+	while (charsRead < charsToRead) {
+		ch = conn->read();
 		s += ch;
+		charsRead++;
 	}
 	return s;
 }
 
+void handleListNG(const shared_ptr<Connection>& conn){
+	readByte(conn); // End byte
+	// Contact database
+	// Reply
+}
+
+void handleCreateNG(const shared_ptr<Connection>& conn){
+	int paramType;
+	int n;
+	string groupTitle;
+	paramType = readByte(conn);
+	cout << paramType << endl;
+	readByte(conn);
+	readByte(conn);
+	readByte(conn); // Av någon anledning skickas det en massa nollor innan N (?)
+	n = readByte(conn);
+	cout << n << endl;
+	groupTitle = readString(conn, n);
+	cout << groupTitle << endl;
+	readByte(conn); // End byte
+	// Contact database
+	// Reply
+
+}
+
+void handleDeleteNG(const shared_ptr<Connection>& conn){
+	int paramType;
+	int n;
+	string groupTitle;
+	paramType = readByte(conn);
+	cout << paramType << endl;
+	readByte(conn);
+	readByte(conn);
+	readByte(conn); // Av någon anledning skickas det en massa nollor innan N (?)
+	n = readByte(conn);
+	readByte(conn); // End byte
+	// Contact database
+	// Reply
+
+}
+
+void handleListArt(const shared_ptr<Connection>& conn){ // Ej testad
+	int paramType;
+	int n;
+	string groupTitle;
+	paramType = readByte(conn);
+	cout << paramType << endl;
+	readByte(conn);
+	readByte(conn);
+	readByte(conn); // Av någon anledning skickas det en massa nollor innan N (?)
+	n = readByte(conn);
+	readByte(conn); // End byte
+	// Contact database
+	// Reply
+
+}
+
+void handleCreateArt(const shared_ptr<Connection>& conn){ // Ej testad
+	int paramType;
+	int n;
+	string groupTitle;
+	paramType = readByte(conn);
+	cout << paramType << endl;
+	readByte(conn);
+	readByte(conn);
+	readByte(conn); // Av någon anledning skickas det en massa nollor innan N (?)
+	n = readByte(conn);
+	readByte(conn); // End byte
+	// Contact database
+	// Reply
+
+}
+
+void handleDeleteArt(const shared_ptr<Connection>& conn){ // Ej testad
+	int paramType;
+	int n;
+	string groupTitle;
+	paramType = readByte(conn);
+	cout << paramType << endl;
+	readByte(conn);
+	readByte(conn);
+	readByte(conn); // Av någon anledning skickas det en massa nollor innan N (?)
+	n = readByte(conn);
+	readByte(conn); // End byte
+	// Contact database
+	// Reply
+}
+
+void handleGetArt(const shared_ptr<Connection>& conn){ // Ej testad
+	int paramType;
+	int n;
+	string groupTitle;
+	paramType = readByte(conn);
+	cout << paramType << endl;
+	readByte(conn);
+	readByte(conn);
+	readByte(conn); // Av någon anledning skickas det en massa nollor innan N (?)
+	n = readByte(conn);
+	readByte(conn); // End byte
+	// Contact database
+	// Reply
+}
+
 int MessageHandler::readMessage(const shared_ptr<Connection>& conn){
-	string line = readString(conn);
-	cout << line << endl;
-	int command = readCommand(conn);
+	int command = readByte(conn);
 	cout << command << endl;
+
+	
 
 	switch(command){
 	case protocol.COM_LIST_NG:
+		handleListNG(conn);
 		break;
 	case protocol.COM_CREATE_NG:
-		cout << "create new group" << endl;
-		//cout << readArgument(conn) << endl;
+		handleCreateNG(conn);
 		break;
 	case protocol.COM_DELETE_NG:
-		cout << readArguments(conn) << endl;
+		handleDeleteNG(conn);
 		break;
 	case protocol.COM_LIST_ART:
-		cout << readArguments(conn) << endl;
+		handleListArt(conn);
 		break;
 	case protocol.COM_CREATE_ART:
-		cout << readArguments(conn) << endl;
+		handleCreateArt(conn);
 		break;
 	case protocol.COM_DELETE_ART:
-		cout << readArguments(conn) << endl;
+		handleDeleteArt(conn);
 		break;
 	case protocol.COM_GET_ART:
-		cout << readArguments(conn) << endl;
+		handleGetArt(conn);
 		break;
 	default:
 		cout << "default" << endl;

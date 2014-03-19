@@ -25,7 +25,7 @@ all: $(PROGS)
 
 # Targets rely on implicit rules for compiling and linking
 # The dependency on libclientserver.a is not defined.
-ngserver:  ngserver.o messagehandler.o
+ngserver:  ngserver.o messagehandler.o memdatabase.o
 #myclient: myclient.o
 
 # Phony targets
@@ -43,5 +43,5 @@ clean:
          rm -f $@.$$$$
 
 # Include the *.d files
-#SRC = $(wildcard *.cc)
-#include $(SRC:.cc=.d)
+SRC = $(wildcard *.cc)
+include $(SRC:.cc=.d)

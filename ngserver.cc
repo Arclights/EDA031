@@ -37,8 +37,7 @@ int main(int argc, char* argv[]){
 		if (conn != nullptr) {
 			cout << "The client wants something" << endl;
 			try {
-				int nbr = messageHandler.readMessage(conn);
-				messageHandler.writeMessage(conn, "");
+				messageHandler.handleMessage(conn);
 			} catch (ConnectionClosedException&) {
 				server.deregisterConnection(conn);
 				cout << "Client closed connection" << endl;

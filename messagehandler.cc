@@ -5,28 +5,11 @@
 #include <sstream>
 #include <iterator>
 #include <vector>
+#include <sstream>
 
 using namespace std;
 
-MessageHandler::MessageHandler():protocol(Protocol()){}
-
-string MessageHandler::readArguments(const shared_ptr<Connection>& conn){
-	cout << "before string" << endl;
-	string arguments = "";	
-	while(true){
-		unsigned char byte = conn->read();
-		if(byte == protocol.COM_END){
-			break;
-		}
-		arguments += byte;
-	}
-	
-	//istringstream buf(arguments);
-    //istream_iterator<string> beg(buf), end;
-	//vector<string> arguments(beg, end);
-
-	return "";
-}
+MessageHandler::MessageHandler():protocol(Protocol()), db(MemDatabase()){}
 
 int readByte(const shared_ptr<Connection>& conn){
 	unsigned char byte1 = conn->read();
@@ -58,22 +41,22 @@ void handleListNG(const shared_ptr<Connection>& conn){
 	// Reply
 }
 
-void handleCreateNG(const shared_ptr<Connection>& conn){
-	int paramType;
-	int n;
-	string groupTitle;
-	paramType = readByte(conn);
-	cout << paramType << endl;
+void MessageHandler::handleCreateNG(const shared_ptr<Connection>& conn){
+	int paramType = readByte(conn);
 	readByte(conn);
 	readByte(conn);
 	readByte(conn); // Av någon anledning skickas det en massa nollor innan N (?)
-	n = readByte(conn);
-	cout << n << endl;
-	groupTitle = readString(conn, n);
-	cout << groupTitle << endl;
+	int n = readByte(conn);
+	string groupTitle = readString(conn, n);
 	readByte(conn); // End byte
-	// Contact database
-	// Reply
+	
+	string dbReply = db.addNewsGroup(groupTitle);
+
+	string message = "";
+	message += protocol.ANS_CREATE_NG;
+	message += dbReply;
+	
+	writeMessage(conn, message);
 
 }
 
@@ -155,11 +138,9 @@ void handleGetArt(const shared_ptr<Connection>& conn){ // Ej testad
 	// Reply
 }
 
-int MessageHandler::readMessage(const shared_ptr<Connection>& conn){
+int MessageHandler::handleMessage(const shared_ptr<Connection>& conn){
 	int command = readByte(conn);
 	cout << command << endl;
-
-	
 
 	switch(command){
 	case protocol.COM_LIST_NG:
@@ -192,7 +173,8 @@ int MessageHandler::readMessage(const shared_ptr<Connection>& conn){
 
 void MessageHandler::writeMessage(const shared_ptr<Connection>& conn, const string& s){
 	for (char c : s) {
+		cout << c << endl;
 		conn->write(c);
 	}
-	conn->write('$');
+	conn->write(protocol.ANS_END);
 }

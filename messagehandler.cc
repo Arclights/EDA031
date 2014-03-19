@@ -16,6 +16,14 @@ int readByte(const shared_ptr<Connection>& conn){
 	return byte1;
 }
 
+int readNumber(const shared_ptr<Connection>& conn) {
+	unsigned char byte1 = conn->read();
+	unsigned char byte2 = conn->read();
+	unsigned char byte3 = conn->read();
+	unsigned char byte4 = conn->read();
+	return (byte1 << 24) | (byte2 << 16) | (byte3 << 8) | byte4;
+}
+
 vector<string> splitString(string& str){
 	istringstream buf(str);
     istream_iterator<string> beg(buf), end;
@@ -35,18 +43,21 @@ string readString(const shared_ptr<Connection>& conn, int charsToRead) {
 	return s;
 }
 
-void handleListNG(const shared_ptr<Connection>& conn){
+void MessageHandler::handleListNG(const shared_ptr<Connection>& conn){
 	readByte(conn); // End byte
-	// Contact database
-	// Reply
+
+	string dbReply = db.listNewsGroups();
+
+	string message = "";
+	message += protocol.ANS_LIST_NG;
+	message += dbReply;
+	
+	writeMessage(conn, message);
 }
 
 void MessageHandler::handleCreateNG(const shared_ptr<Connection>& conn){
 	int paramType = readByte(conn);
-	readByte(conn);
-	readByte(conn);
-	readByte(conn); // Av någon anledning skickas det en massa nollor innan N (?)
-	int n = readByte(conn);
+	int n = readNumber(conn);
 	string groupTitle = readString(conn, n);
 	readByte(conn); // End byte
 	
@@ -173,7 +184,6 @@ int MessageHandler::handleMessage(const shared_ptr<Connection>& conn){
 
 void MessageHandler::writeMessage(const shared_ptr<Connection>& conn, const string& s){
 	for (char c : s) {
-		cout << c << endl;
 		conn->write(c);
 	}
 	conn->write(protocol.ANS_END);

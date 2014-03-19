@@ -14,6 +14,7 @@ public:
 	int handleMessage(const shared_ptr<Connection>& conn);
 	void writeMessage(const shared_ptr<Connection>& conn, const string& s);
 private:
+	void handleListNG(const shared_ptr<Connection>& conn);
 	void handleCreateNG(const shared_ptr<Connection>& conn);
 	Protocol protocol;
 	MemDatabase db;

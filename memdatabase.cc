@@ -5,7 +5,7 @@
 
 #include "memdatabase.h"
 
-MemDatabase::MemDatabase():newsGroupsCounter(0), protocol(Protocol()){}
+MemDatabase::MemDatabase():newsGroupsCounter(1), protocol(Protocol()){}
 
 vector<char> intToChars(int i){
 	vector<char> out;
@@ -125,6 +125,28 @@ string MemDatabase::getArticle(int ngID, int artID){
 			appendString(out, artExists->second.title);
 			appendString(out, artExists->second.author);
 			appendString(out, artExists->second.text);
+		}
+	}
+
+	return out;
+}
+
+string MemDatabase::deleteArticle(int ngID, int artID){
+	auto ngExists = newsGroups.find(ngID);
+
+	string out = "";
+	if(ngExists == newsGroups.end()){
+		out += protocol.ANS_NAK;
+		out += protocol.ERR_NG_DOES_NOT_EXIST;
+	}else{
+		auto artExists = articles.find(artID);
+
+		if(artExists == articles.end()){
+			out += protocol.ANS_NAK;
+			out += protocol.ERR_ART_DOES_NOT_EXIST;
+		}else{
+			articles.erase(artExists);
+			out += protocol.ANS_ACK;
 		}
 	}
 

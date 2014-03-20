@@ -1,4 +1,5 @@
 #include "messagehandler.h"
+#include "misbehavingclientexception.h"
 
 #include <iostream>
 #include <algorithm>
@@ -9,7 +10,7 @@
 
 using namespace std;
 
-MessageHandler::MessageHandler():protocol(Protocol()), db(MemDatabase()){}
+MessageHandler::MessageHandler():db(MemDatabase()){}
 
 int readByte(const shared_ptr<Connection>& conn){
 	unsigned char byte1 = conn->read();
@@ -36,6 +37,9 @@ string readString(const shared_ptr<Connection>& conn) {
 	char ch;
 	int charsRead = 0;
 	int paramType = readByte(conn);
+	if(paramType != Protocol::PAR_STRING){
+		throw MisbehavingClientException();
+	}
 	int charsToRead = readInt(conn);
 	while (charsRead < charsToRead) {
 		ch = conn->read();
@@ -47,7 +51,17 @@ string readString(const shared_ptr<Connection>& conn) {
 
 int readNumber(const shared_ptr<Connection>& conn){
 	int paramType = readByte(conn);
+	if(paramType != Protocol::PAR_NUM){
+		throw MisbehavingClientException();
+	}
 	return readInt(conn);
+}
+
+void readEndByte(const shared_ptr<Connection>& conn){
+	int paramType = readByte(conn);
+	if(paramType != Protocol::COM_END){
+		throw MisbehavingClientException();
+	}
 }
 
 vector<char> intToChars(int i){
@@ -55,11 +69,11 @@ vector<char> intToChars(int i){
 	out.push_back((i >> 24) & 0x000000FF);
 	out.push_back((i >> 16) & 0x000000FF);
 	out.push_back((i >> 8) & 0x000000FF);
-	out.push_back((i) & 0x000000FF);
+	out.push_back(i & 0x000000FF);
 	return out;
 }
 
-void appendIntInBytes2(string& out, int i){
+void appendIntInBytes(string& out, int i){
 	vector<char> cs = intToChars(i);
 	for(char c : cs){
 		out += c;
@@ -67,21 +81,21 @@ void appendIntInBytes2(string& out, int i){
 }
 
 void MessageHandler::appendString(string& out, const string& s) const{
-	out += protocol.PAR_STRING;
-	appendIntInBytes2(out, s.size());
+	out += Protocol::PAR_STRING;
+	appendIntInBytes(out, s.size());
 	out += s;
 }
 
 void MessageHandler::appendNumber(string& out, int number) const{
-	out += protocol.PAR_NUM;
-	appendIntInBytes2(out, number);
+	out += Protocol::PAR_NUM;
+	appendIntInBytes(out, number);
 }
 
 void MessageHandler::handleListNG(const shared_ptr<Connection>& conn){
-	readByte(conn); // End byte
+	readEndByte(conn);
 
 	string message = "";
-	message += protocol.ANS_LIST_NG;
+	message += Protocol::ANS_LIST_NG;
 	cout << "Listing news groups" << endl;
 	map<int, string> newsGroups = db.getNewsGroups();
 	appendNumber(message, newsGroups.size());
@@ -96,17 +110,17 @@ void MessageHandler::handleListNG(const shared_ptr<Connection>& conn){
 
 void MessageHandler::handleCreateNG(const shared_ptr<Connection>& conn){
 	string groupTitle = readString(conn);
-	readByte(conn); // End byte
+	readEndByte(conn);
 	
 	string message = "";
-	message += protocol.ANS_CREATE_NG;
+	message += Protocol::ANS_CREATE_NG;
 	if(db.newsGroupTitleExists(groupTitle)){
-		message += protocol.ANS_NAK;
-		message += protocol.ERR_NG_ALREADY_EXISTS;
+		message += Protocol::ANS_NAK;
+		message += Protocol::ERR_NG_ALREADY_EXISTS;
 	}else{
 		cout << "Creating group " << groupTitle << endl;
 		db.addNewsGroup(groupTitle);
-		message += protocol.ANS_ACK;
+		message += Protocol::ANS_ACK;
 	}
 
 	writeMessage(conn, message);
@@ -115,17 +129,17 @@ void MessageHandler::handleCreateNG(const shared_ptr<Connection>& conn){
 
 void MessageHandler::handleDeleteNG(const shared_ptr<Connection>& conn){
 	int ngID = readNumber(conn);
-	readByte(conn); // End byte
+	readEndByte(conn);
 
 	string message = "";
-	message += protocol.ANS_DELETE_NG;
+	message += Protocol::ANS_DELETE_NG;
 	if(!db.newsGroupExists(ngID)){
-		message += protocol.ANS_NAK;
-		message += protocol.ERR_NG_DOES_NOT_EXIST;
+		message += Protocol::ANS_NAK;
+		message += Protocol::ERR_NG_DOES_NOT_EXIST;
 	}else{
 		db.deleteArticlesInNewsGroup(ngID);
 		db.deleteNewsGroup(ngID);
-		message += protocol.ANS_ACK;
+		message += Protocol::ANS_ACK;
 	}
 	
 	writeMessage(conn, message);
@@ -134,16 +148,16 @@ void MessageHandler::handleDeleteNG(const shared_ptr<Connection>& conn){
 
 void MessageHandler::handleListArt(const shared_ptr<Connection>& conn){
 	int ngID = readNumber(conn);
-	readByte(conn); // End byte
+	readEndByte(conn);
 
 	string message = "";
-	message += protocol.ANS_LIST_ART;
+	message += Protocol::ANS_LIST_ART;
 	if(!db.newsGroupExists(ngID)){
-		message += protocol.ANS_NAK;
-		message += protocol.ERR_NG_DOES_NOT_EXIST;
+		message += Protocol::ANS_NAK;
+		message += Protocol::ERR_NG_DOES_NOT_EXIST;
 	}else{
 		vector<pair<int, Article>> foundArticles = db.getArticles(ngID);
-		message += protocol.ANS_ACK;
+		message += Protocol::ANS_ACK;
 		appendNumber(message, foundArticles.size());
 		for(pair<int, Article> art : foundArticles){
 			appendNumber(message, art.first);
@@ -160,16 +174,16 @@ void MessageHandler::handleCreateArt(const shared_ptr<Connection>& conn){
 	string title = readString(conn);
 	string author = readString(conn);
 	string text = readString(conn);
-	readByte(conn); // End byte
+	readEndByte(conn);
 	
 	string message = "";
-	message += protocol.ANS_CREATE_ART;
+	message += Protocol::ANS_CREATE_ART;
 	if(!db.newsGroupExists(ngID)){
-		message += protocol.ANS_NAK;
-		message += protocol.ERR_NG_DOES_NOT_EXIST;
+		message += Protocol::ANS_NAK;
+		message += Protocol::ERR_NG_DOES_NOT_EXIST;
 	}else{
 		db.addArticle(ngID, title, author, text);
-		message += protocol.ANS_ACK;
+		message += Protocol::ANS_ACK;
 	}
 
 	writeMessage(conn, message);
@@ -179,20 +193,20 @@ void MessageHandler::handleCreateArt(const shared_ptr<Connection>& conn){
 void MessageHandler::handleDeleteArt(const shared_ptr<Connection>& conn){
 	int ngID = readNumber(conn);
 	int artID = readNumber(conn);
-	readByte(conn); // End byte
+	readEndByte(conn);
 
 	string message = "";
-	message += protocol.ANS_DELETE_ART;
+	message += Protocol::ANS_DELETE_ART;
 	if(!db.newsGroupExists(ngID)){
-		message += protocol.ANS_NAK;
-		message += protocol.ERR_NG_DOES_NOT_EXIST;
+		message += Protocol::ANS_NAK;
+		message += Protocol::ERR_NG_DOES_NOT_EXIST;
 	}else{
 		if(!db.articleExists(artID)){
-			message += protocol.ANS_NAK;
-			message += protocol.ERR_ART_DOES_NOT_EXIST;
+			message += Protocol::ANS_NAK;
+			message += Protocol::ERR_ART_DOES_NOT_EXIST;
 		}else{
 			db.deleteArticle(artID);
-			message += protocol.ANS_ACK;
+			message += Protocol::ANS_ACK;
 		}
 	}
 
@@ -202,19 +216,19 @@ void MessageHandler::handleDeleteArt(const shared_ptr<Connection>& conn){
 void MessageHandler::handleGetArt(const shared_ptr<Connection>& conn){
 	int ngID = readNumber(conn);
 	int artID = readNumber(conn);
-	readByte(conn); // End byte
+	readEndByte(conn);
 
 	string message = "";
-	message += protocol.ANS_GET_ART;
+	message += Protocol::ANS_GET_ART;
 	if(!db.newsGroupExists(ngID)){
-		message += protocol.ANS_NAK;
-		message += protocol.ERR_NG_DOES_NOT_EXIST;
+		message += Protocol::ANS_NAK;
+		message += Protocol::ERR_NG_DOES_NOT_EXIST;
 	}else{
 		if(!db.articleExists(artID)){
-			message += protocol.ANS_NAK;
-			message += protocol.ERR_ART_DOES_NOT_EXIST;
+			message += Protocol::ANS_NAK;
+			message += Protocol::ERR_ART_DOES_NOT_EXIST;
 		}else{
-			message += protocol.ANS_ACK;
+			message += Protocol::ANS_ACK;
 			Article art = db.getArticle(artID);
 			appendString(message, art.title);
 			appendString(message, art.author);
@@ -229,31 +243,38 @@ void MessageHandler::handleMessage(const shared_ptr<Connection>& conn){
 	int command = readByte(conn);
 	cout << command << endl;
 
-	switch(command){
-	case protocol.COM_LIST_NG:
-		handleListNG(conn);
-		break;
-	case protocol.COM_CREATE_NG:
-		handleCreateNG(conn);
-		break;
-	case protocol.COM_DELETE_NG:
-		handleDeleteNG(conn);
-		break;
-	case protocol.COM_LIST_ART:
-		handleListArt(conn);
-		break;
-	case protocol.COM_CREATE_ART:
-		handleCreateArt(conn);
-		break;
-	case protocol.COM_DELETE_ART:
-		handleDeleteArt(conn);
-		break;
-	case protocol.COM_GET_ART:
-		handleGetArt(conn);
-		break;
-	default:
-		cout << "default" << endl;
-		break;
+	try
+	{
+		switch(command){
+		case Protocol::COM_LIST_NG:
+			handleListNG(conn);
+			break;
+		case Protocol::COM_CREATE_NG:
+			handleCreateNG(conn);
+			break;
+		case Protocol::COM_DELETE_NG:
+			handleDeleteNG(conn);
+			break;
+		case Protocol::COM_LIST_ART:
+			handleListArt(conn);
+			break;
+		case Protocol::COM_CREATE_ART:
+			handleCreateArt(conn);
+			break;
+		case Protocol::COM_DELETE_ART:
+			handleDeleteArt(conn);
+			break;
+		case Protocol::COM_GET_ART:
+			handleGetArt(conn);
+			break;
+		default:
+			throw MisbehavingClientException();
+			break;
+		}
+	}
+	catch(MisbehavingClientException e)
+	{
+		conn->~Connection();
 	}
 }
 
@@ -261,5 +282,5 @@ void MessageHandler::writeMessage(const shared_ptr<Connection>& conn, const stri
 	for (char c : s) {
 		conn->write(c);
 	}
-	conn->write(protocol.ANS_END);
+	conn->write(Protocol::ANS_END);
 }

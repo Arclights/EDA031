@@ -23,6 +23,5 @@ private:
 	void appendString(string& out, const string& s) const;
 	void appendNumber(string& out, int number) const;
 	void writeMessage(const shared_ptr<Connection>& conn, const string& s);
-	Protocol protocol;
 	MemDatabase db;
 };

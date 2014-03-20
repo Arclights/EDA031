@@ -87,19 +87,19 @@ void handleDeleteNG(const shared_ptr<Connection>& conn){
 
 }
 
-void handleListArt(const shared_ptr<Connection>& conn){ // Ej testad
-	int paramType;
-	int n;
-	string groupTitle;
-	paramType = readByte(conn);
+void MessageHandler::handleListArt(const shared_ptr<Connection>& conn){
+	int paramType = readByte(conn);
 	cout << paramType << endl;
-	readByte(conn);
-	readByte(conn);
-	readByte(conn); // Av någon anledning skickas det en massa nollor innan N (?)
-	n = readByte(conn);
+	int ngID = readNumber(conn);
 	readByte(conn); // End byte
-	// Contact database
-	// Reply
+
+	string dbReply = db.listArticles(ngID);
+
+	string message = "";
+	message += protocol.ANS_LIST_ART;
+	message += dbReply;
+	
+	writeMessage(conn, message);
 
 }
 

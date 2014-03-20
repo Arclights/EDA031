@@ -14,19 +14,20 @@ struct Article{
 class MemDatabase{
 public:
 	MemDatabase();
-	string addNewsGroup(const string& title);
-	string listNewsGroups();
-	string listArticles(int ngID);
-	string addArticle(int ngID, const string& title, const string& author, const string& text);
-	string getArticle(int ngID, int artID);
-	string deleteArticle(int ngID, int artID);
-	string deleteNewsGroup(int ngID);
+	void addNewsGroup(const string& title);
+	map<int, string> getNewsGroups();
+	vector<pair<int, Article>> getArticles(int ngID);
+	void addArticle(int ngID, const string& title, const string& author, const string& text);
+	Article getArticle(int artID);
+	void deleteArticle(int artID);
+	void deleteArticlesInNewsGroup(int ngID);
+	void deleteNewsGroup(int ngID);
+	bool newsGroupTitleExists(const string& title) const;
+	bool newsGroupExists(int ngID) const;
+	bool articleExists(int artID) const;
 private:
-	void appendString(string& out, string& s);
-	void appendNumber(string& out, int number);
 	int newsGroupsCounter;
 	map<int, string> newsGroups;
 	int artCounter;
 	map<int, Article> articles;
-	Protocol protocol;
 };

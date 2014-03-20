@@ -50,15 +50,47 @@ int readNumber(const shared_ptr<Connection>& conn){
 	return readInt(conn);
 }
 
+vector<char> intToChars(int i){
+	vector<char> out;
+	out.push_back((i >> 24) & 0x000000FF);
+	out.push_back((i >> 16) & 0x000000FF);
+	out.push_back((i >> 8) & 0x000000FF);
+	out.push_back((i) & 0x000000FF);
+	return out;
+}
+
+void appendIntInBytes2(string& out, int i){
+	vector<char> cs = intToChars(i);
+	for(char c : cs){
+		out += c;
+	}
+}
+
+void MessageHandler::appendString(string& out, const string& s) const{
+	out += protocol.PAR_STRING;
+	appendIntInBytes2(out, s.size());
+	out += s;
+}
+
+void MessageHandler::appendNumber(string& out, int number) const{
+	out += protocol.PAR_NUM;
+	appendIntInBytes2(out, number);
+}
+
 void MessageHandler::handleListNG(const shared_ptr<Connection>& conn){
 	readByte(conn); // End byte
 
-	string dbReply = db.listNewsGroups();
-
 	string message = "";
 	message += protocol.ANS_LIST_NG;
-	message += dbReply;
-	
+	cout << "Listing news groups" << endl;
+	map<int, string> newsGroups = db.getNewsGroups();
+	appendNumber(message, newsGroups.size());
+
+	for(pair<int, string> ng: newsGroups){
+		appendNumber(message, ng.first);
+		appendString(message, ng.second);
+	}
+
 	writeMessage(conn, message);
 }
 
@@ -66,12 +98,17 @@ void MessageHandler::handleCreateNG(const shared_ptr<Connection>& conn){
 	string groupTitle = readString(conn);
 	readByte(conn); // End byte
 	
-	string dbReply = db.addNewsGroup(groupTitle);
-
 	string message = "";
 	message += protocol.ANS_CREATE_NG;
-	message += dbReply;
-	
+	if(db.newsGroupTitleExists(groupTitle)){
+		message += protocol.ANS_NAK;
+		message += protocol.ERR_NG_ALREADY_EXISTS;
+	}else{
+		cout << "Creating group " << groupTitle << endl;
+		db.addNewsGroup(groupTitle);
+		message += protocol.ANS_ACK;
+	}
+
 	writeMessage(conn, message);
 
 }
@@ -80,11 +117,16 @@ void MessageHandler::handleDeleteNG(const shared_ptr<Connection>& conn){
 	int ngID = readNumber(conn);
 	readByte(conn); // End byte
 
-	string dbReply = db.deleteNewsGroup(ngID);
-
 	string message = "";
 	message += protocol.ANS_DELETE_NG;
-	message += dbReply;
+	if(!db.newsGroupExists(ngID)){
+		message += protocol.ANS_NAK;
+		message += protocol.ERR_NG_DOES_NOT_EXIST;
+	}else{
+		db.deleteArticlesInNewsGroup(ngID);
+		db.deleteNewsGroup(ngID);
+		message += protocol.ANS_ACK;
+	}
 	
 	writeMessage(conn, message);
 
@@ -94,12 +136,21 @@ void MessageHandler::handleListArt(const shared_ptr<Connection>& conn){
 	int ngID = readNumber(conn);
 	readByte(conn); // End byte
 
-	string dbReply = db.listArticles(ngID);
-
 	string message = "";
 	message += protocol.ANS_LIST_ART;
-	message += dbReply;
-	
+	if(!db.newsGroupExists(ngID)){
+		message += protocol.ANS_NAK;
+		message += protocol.ERR_NG_DOES_NOT_EXIST;
+	}else{
+		vector<pair<int, Article>> foundArticles = db.getArticles(ngID);
+		message += protocol.ANS_ACK;
+		appendNumber(message, foundArticles.size());
+		for(pair<int, Article> art : foundArticles){
+			appendNumber(message, art.first);
+			appendString(message, art.second.title);
+		}
+	}
+
 	writeMessage(conn, message);
 
 }
@@ -111,12 +162,16 @@ void MessageHandler::handleCreateArt(const shared_ptr<Connection>& conn){
 	string text = readString(conn);
 	readByte(conn); // End byte
 	
-	string dbReply = db.addArticle(ngID, title, author, text);
-
 	string message = "";
 	message += protocol.ANS_CREATE_ART;
-	message += dbReply;
-	
+	if(!db.newsGroupExists(ngID)){
+		message += protocol.ANS_NAK;
+		message += protocol.ERR_NG_DOES_NOT_EXIST;
+	}else{
+		db.addArticle(ngID, title, author, text);
+		message += protocol.ANS_ACK;
+	}
+
 	writeMessage(conn, message);
 
 }
@@ -126,12 +181,21 @@ void MessageHandler::handleDeleteArt(const shared_ptr<Connection>& conn){
 	int artID = readNumber(conn);
 	readByte(conn); // End byte
 
-	string dbReply = db.deleteArticle(ngID, artID);
-
 	string message = "";
 	message += protocol.ANS_DELETE_ART;
-	message += dbReply;
-	
+	if(!db.newsGroupExists(ngID)){
+		message += protocol.ANS_NAK;
+		message += protocol.ERR_NG_DOES_NOT_EXIST;
+	}else{
+		if(!db.articleExists(artID)){
+			message += protocol.ANS_NAK;
+			message += protocol.ERR_ART_DOES_NOT_EXIST;
+		}else{
+			db.deleteArticle(artID);
+			message += protocol.ANS_ACK;
+		}
+	}
+
 	writeMessage(conn, message);
 }
 
@@ -140,12 +204,24 @@ void MessageHandler::handleGetArt(const shared_ptr<Connection>& conn){
 	int artID = readNumber(conn);
 	readByte(conn); // End byte
 
-	string dbReply = db.getArticle(ngID, artID);
-
 	string message = "";
 	message += protocol.ANS_GET_ART;
-	message += dbReply;
-	
+	if(!db.newsGroupExists(ngID)){
+		message += protocol.ANS_NAK;
+		message += protocol.ERR_NG_DOES_NOT_EXIST;
+	}else{
+		if(!db.articleExists(artID)){
+			message += protocol.ANS_NAK;
+			message += protocol.ERR_ART_DOES_NOT_EXIST;
+		}else{
+			message += protocol.ANS_ACK;
+			Article art = db.getArticle(artID);
+			appendString(message, art.title);
+			appendString(message, art.author);
+			appendString(message, art.text);
+		}
+	}
+
 	writeMessage(conn, message);
 }
 

@@ -5,170 +5,63 @@
 
 #include "memdatabase.h"
 
-MemDatabase::MemDatabase():newsGroupsCounter(1), protocol(Protocol()){}
+MemDatabase::MemDatabase():newsGroupsCounter(1){}
 
-vector<char> intToChars(int i){
-	vector<char> out;
-	out.push_back((i >> 24) & 0x000000FF);
-	out.push_back((i >> 16) & 0x000000FF);
-	out.push_back((i >> 8) & 0x000000FF);
-	out.push_back((i) & 0x000000FF);
-	return out;
+bool MemDatabase::newsGroupTitleExists(const string& title) const{
+	return find_if(newsGroups.begin(), newsGroups.end(), [&title](const pair<int, string>& p){return p.second == title;}) != newsGroups.end();
 }
 
-void appendIntInBytes(string& out, int i){
-	vector<char> cs = intToChars(i);
-	for(char c : cs){
-		out += c;
-	}
+bool MemDatabase::newsGroupExists(int ngID) const{
+	return newsGroups.find(ngID) != newsGroups.end();
 }
 
-void MemDatabase::appendString(string& out, string& s){
-	out += protocol.PAR_STRING;
-	appendIntInBytes(out, s.size());
-	out += s;
+bool MemDatabase::articleExists(int artID) const{
+	return articles.find(artID) != articles.end();
 }
 
-void MemDatabase::appendNumber(string& out, int number){
-	out += protocol.PAR_NUM;
-	appendIntInBytes(out, number);
+void MemDatabase::addNewsGroup(const string& title){
+	newsGroups.insert({newsGroupsCounter++, title});
 }
 
-string MemDatabase::addNewsGroup(const string& title){
-	auto exists = find_if(newsGroups.begin(), newsGroups.end(), [&title](const pair<int, string>& p){return p.second == title;});
-
-	string out = "";
-	if(exists != newsGroups.end()){
-		out += protocol.ANS_NAK;
-		out += protocol.ERR_NG_ALREADY_EXISTS;
-	}else{
-		cout << "Creating group " << title << endl;
-		newsGroups.insert({newsGroupsCounter++, title});
-		out += protocol.ANS_ACK;
-	}
-	return out;
+map<int, string> MemDatabase::getNewsGroups(){
+	return newsGroups;
 }
 
-string MemDatabase::listNewsGroups(){
-	cout << "Listing news groups" << endl;
-	string out = "";
-	appendNumber(out, newsGroups.size());
-
-	for(pair<int, string> ng: newsGroups){
-		appendNumber(out, ng.first);
-		appendString(out, ng.second);
-	}
-
-	return out;
-}
-
-string MemDatabase::listArticles(int ngID){
-	auto exists = newsGroups.find(ngID);
-
-	string out = "";
-	if(exists == newsGroups.end()){
-		out += protocol.ANS_NAK;
-		out += protocol.ERR_NG_DOES_NOT_EXIST;
-	}else{
-		vector<pair<int, Article>> foundArticles;
+vector<pair<int, Article>> MemDatabase::getArticles(int ngID){
+	vector<pair<int, Article>> foundArticles;
 		for(pair<int, Article> art : articles){
 			if(art.second.newsGroupID == ngID){
 				foundArticles.push_back(art);
-			}
-		}
-		out += protocol.ANS_ACK;
-		appendNumber(out, foundArticles.size());
-		for(pair<int, Article> art : foundArticles){
-			appendNumber(out, art.first);
-			appendString(out, art.second.title);
 		}
 	}
-
-	return out;
+	return foundArticles;
 }
 
-string MemDatabase::addArticle(int ngID, const string& title, const string& author, const string& text){
-	auto exists = newsGroups.find(ngID);
-
-	string out = "";
-	if(exists == newsGroups.end()){
-		out += protocol.ANS_NAK;
-		out += protocol.ERR_NG_DOES_NOT_EXIST;
-	}else{
-		Article article;
-		article.newsGroupID = ngID;
-		article.title = title;
-		article.author = author;
-		article.text = text;
-		articles.insert({artCounter++, article});
-		out += protocol.ANS_ACK;
-	}
-
-	return out;
+void MemDatabase::addArticle(int ngID, const string& title, const string& author, const string& text){
+	Article article;
+	article.newsGroupID = ngID;
+	article.title = title;
+	article.author = author;
+	article.text = text;
+	articles.insert({artCounter++, article});
 }
 
-string MemDatabase::getArticle(int ngID, int artID){
-	auto ngExists = newsGroups.find(ngID);
-
-	string out = "";
-	if(ngExists == newsGroups.end()){
-		out += protocol.ANS_NAK;
-		out += protocol.ERR_NG_DOES_NOT_EXIST;
-	}else{
-		auto artExists = articles.find(artID);
-
-		if(artExists == articles.end()){
-			out += protocol.ANS_NAK;
-			out += protocol.ERR_ART_DOES_NOT_EXIST;
-		}else{
-			out += protocol.ANS_ACK;
-			appendString(out, artExists->second.title);
-			appendString(out, artExists->second.author);
-			appendString(out, artExists->second.text);
-		}
-	}
-
-	return out;
+Article MemDatabase::getArticle(int artID){
+	return articles[artID];
 }
 
-string MemDatabase::deleteArticle(int ngID, int artID){
-	auto ngExists = newsGroups.find(ngID);
-
-	string out = "";
-	if(ngExists == newsGroups.end()){
-		out += protocol.ANS_NAK;
-		out += protocol.ERR_NG_DOES_NOT_EXIST;
-	}else{
-		auto artExists = articles.find(artID);
-
-		if(artExists == articles.end()){
-			out += protocol.ANS_NAK;
-			out += protocol.ERR_ART_DOES_NOT_EXIST;
-		}else{
-			articles.erase(artExists);
-			out += protocol.ANS_ACK;
-		}
-	}
-
-	return out;
+void MemDatabase::deleteArticle(int artID){
+	articles.erase(artID);
 }
 
-string MemDatabase::deleteNewsGroup(int ngID){
-	auto ngExists = newsGroups.find(ngID);
-
-	string out = "";
-	if(ngExists == newsGroups.end()){
-		out += protocol.ANS_NAK;
-		out += protocol.ERR_NG_DOES_NOT_EXIST;
-	}else{
-		for(pair<int, Article> art:articles){
-			if(art.second.newsGroupID == ngID){
-				articles.erase(art.first);
-			}
+void MemDatabase::deleteArticlesInNewsGroup(int ngID){
+	for(pair<int, Article> art:articles){
+		if(art.second.newsGroupID == ngID){
+			deleteArticle(art.first);
 		}
-		newsGroups.erase(ngID);
-		out += protocol.ANS_ACK;
 	}
+}
 
-	return out;
+void MemDatabase::deleteNewsGroup(int ngID){
+	newsGroups.erase(ngID);
 }

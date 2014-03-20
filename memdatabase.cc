@@ -152,3 +152,23 @@ string MemDatabase::deleteArticle(int ngID, int artID){
 
 	return out;
 }
+
+string MemDatabase::deleteNewsGroup(int ngID){
+	auto ngExists = newsGroups.find(ngID);
+
+	string out = "";
+	if(ngExists == newsGroups.end()){
+		out += protocol.ANS_NAK;
+		out += protocol.ERR_NG_DOES_NOT_EXIST;
+	}else{
+		for(pair<int, Article> art:articles){
+			if(art.second.newsGroupID == ngID){
+				articles.erase(art.first);
+			}
+		}
+		newsGroups.erase(ngID);
+		out += protocol.ANS_ACK;
+	}
+
+	return out;
+}

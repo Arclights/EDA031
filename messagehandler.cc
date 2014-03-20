@@ -76,19 +76,17 @@ void MessageHandler::handleCreateNG(const shared_ptr<Connection>& conn){
 
 }
 
-void handleDeleteNG(const shared_ptr<Connection>& conn){
-	int paramType;
-	int n;
-	string groupTitle;
-	paramType = readByte(conn);
-	cout << paramType << endl;
-	readByte(conn);
-	readByte(conn);
-	readByte(conn); // Av någon anledning skickas det en massa nollor innan N (?)
-	n = readByte(conn);
+void MessageHandler::handleDeleteNG(const shared_ptr<Connection>& conn){
+	int ngID = readNumber(conn);
 	readByte(conn); // End byte
-	// Contact database
-	// Reply
+
+	string dbReply = db.deleteNewsGroup(ngID);
+
+	string message = "";
+	message += protocol.ANS_DELETE_NG;
+	message += dbReply;
+	
+	writeMessage(conn, message);
 
 }
 
@@ -151,7 +149,7 @@ void MessageHandler::handleGetArt(const shared_ptr<Connection>& conn){
 	writeMessage(conn, message);
 }
 
-int MessageHandler::handleMessage(const shared_ptr<Connection>& conn){
+void MessageHandler::handleMessage(const shared_ptr<Connection>& conn){
 	int command = readByte(conn);
 	cout << command << endl;
 
@@ -181,7 +179,6 @@ int MessageHandler::handleMessage(const shared_ptr<Connection>& conn){
 		cout << "default" << endl;
 		break;
 	}
-	return command;
 }
 
 void MessageHandler::writeMessage(const shared_ptr<Connection>& conn, const string& s){

@@ -20,6 +20,7 @@ private:
 	void handleCreateArt(const shared_ptr<Connection>& conn);
 	void handleGetArt(const shared_ptr<Connection>& conn);
 	void handleDeleteArt(const shared_ptr<Connection>& conn);
+	void handleDeleteNG(const shared_ptr<Connection>& conn);
 	Protocol protocol;
 	MemDatabase db;
 };

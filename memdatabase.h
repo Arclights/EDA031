@@ -18,8 +18,10 @@ public:
 	string listNewsGroups();
 	string listArticles(int ngID);
 	string addArticle(int ngID, const string& title, const string& author, const string& text);
-
+	string getArticle(int ngID, int artID);
 private:
+	void appendString(string& out, string& s);
+	void appendNumber(string& out, int number);
 	int newsGroupsCounter;
 	map<int, string> newsGroups;
 	int artCounter;

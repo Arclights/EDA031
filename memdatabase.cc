@@ -23,6 +23,17 @@ void appendIntInBytes(string& out, int i){
 	}
 }
 
+void MemDatabase::appendString(string& out, string& s){
+	out += protocol.PAR_STRING;
+	appendIntInBytes(out, s.size());
+	out += s;
+}
+
+void MemDatabase::appendNumber(string& out, int number){
+	out += protocol.PAR_NUM;
+	appendIntInBytes(out, number);
+}
+
 string MemDatabase::addNewsGroup(const string& title){
 	auto exists = find_if(newsGroups.begin(), newsGroups.end(), [&title](const pair<int, string>& p){return p.second == title;});
 
@@ -41,22 +52,18 @@ string MemDatabase::addNewsGroup(const string& title){
 string MemDatabase::listNewsGroups(){
 	cout << "Listing news groups" << endl;
 	string out = "";
-	out += protocol.PAR_NUM;
-	appendIntInBytes(out, newsGroups.size());
+	appendNumber(out, newsGroups.size());
 
 	for(pair<int, string> ng: newsGroups){
-		out += protocol.PAR_NUM;
-		appendIntInBytes(out, ng.first);
-		out += protocol.PAR_STRING;
-		appendIntInBytes(out, ng.second.size());
-		out += ng.second;
+		appendNumber(out, ng.first);
+		appendString(out, ng.second);
 	}
 
 	return out;
 }
 
 string MemDatabase::listArticles(int ngID){
-	auto exists = find_if(newsGroups.begin(), newsGroups.end(), [&ngID](const pair<int, string>& p){return p.first == ngID;});
+	auto exists = newsGroups.find(ngID);
 
 	string out = "";
 	if(exists == newsGroups.end()){
@@ -70,14 +77,10 @@ string MemDatabase::listArticles(int ngID){
 			}
 		}
 		out += protocol.ANS_ACK;
-		out += protocol.PAR_NUM;
-		appendIntInBytes(out, foundArticles.size());
+		appendNumber(out, foundArticles.size());
 		for(pair<int, Article> art : foundArticles){
-			out += protocol.PAR_NUM;
-			appendIntInBytes(out, art.first);
-			out += protocol.PAR_STRING;
-			appendIntInBytes(out, art.second.title.size());
-			out += art.second.title;
+			appendNumber(out, art.first);
+			appendString(out, art.second.title);
 		}
 	}
 
@@ -85,7 +88,7 @@ string MemDatabase::listArticles(int ngID){
 }
 
 string MemDatabase::addArticle(int ngID, const string& title, const string& author, const string& text){
-	auto exists = find_if(newsGroups.begin(), newsGroups.end(), [&ngID](const pair<int, string>& p){return p.first == ngID;});
+	auto exists = newsGroups.find(ngID);
 
 	string out = "";
 	if(exists == newsGroups.end()){
@@ -99,6 +102,30 @@ string MemDatabase::addArticle(int ngID, const string& title, const string& auth
 		article.text = text;
 		articles.insert({artCounter++, article});
 		out += protocol.ANS_ACK;
+	}
+
+	return out;
+}
+
+string MemDatabase::getArticle(int ngID, int artID){
+	auto ngExists = newsGroups.find(ngID);
+
+	string out = "";
+	if(ngExists == newsGroups.end()){
+		out += protocol.ANS_NAK;
+		out += protocol.ERR_NG_DOES_NOT_EXIST;
+	}else{
+		auto artExists = articles.find(artID);
+
+		if(artExists == articles.end()){
+			out += protocol.ANS_NAK;
+			out += protocol.ERR_ART_DOES_NOT_EXIST;
+		}else{
+			out += protocol.ANS_ACK;
+			appendString(out, artExists->second.title);
+			appendString(out, artExists->second.author);
+			appendString(out, artExists->second.text);
+		}
 	}
 
 	return out;

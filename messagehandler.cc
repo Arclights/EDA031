@@ -120,7 +120,6 @@ void MessageHandler::handleCreateArt(const shared_ptr<Connection>& conn){
 	message += dbReply;
 	
 	writeMessage(conn, message);
-	// writeMessage(conn, "");
 
 }
 
@@ -139,19 +138,18 @@ void handleDeleteArt(const shared_ptr<Connection>& conn){ // Ej testad
 	// Reply
 }
 
-void handleGetArt(const shared_ptr<Connection>& conn){ // Ej testad
-	int paramType;
-	int n;
-	string groupTitle;
-	paramType = readByte(conn);
-	cout << paramType << endl;
-	readByte(conn);
-	readByte(conn);
-	readByte(conn); // Av någon anledning skickas det en massa nollor innan N (?)
-	n = readByte(conn);
+void MessageHandler::handleGetArt(const shared_ptr<Connection>& conn){
+	int ngID = readNumber(conn);
+	int artID = readNumber(conn);
 	readByte(conn); // End byte
-	// Contact database
-	// Reply
+
+	string dbReply = db.getArticle(ngID, artID);
+
+	string message = "";
+	message += protocol.ANS_GET_ART;
+	message += dbReply;
+	
+	writeMessage(conn, message);
 }
 
 int MessageHandler::handleMessage(const shared_ptr<Connection>& conn){

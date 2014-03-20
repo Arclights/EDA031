@@ -11,8 +11,7 @@ using namespace std;
 class MessageHandler{
 public:
 	MessageHandler();
-	int handleMessage(const shared_ptr<Connection>& conn);
-	void writeMessage(const shared_ptr<Connection>& conn, const string& s);
+	void handleMessage(const shared_ptr<Connection>& conn);
 private:
 	void handleListNG(const shared_ptr<Connection>& conn);
 	void handleCreateNG(const shared_ptr<Connection>& conn);
@@ -21,6 +20,7 @@ private:
 	void handleGetArt(const shared_ptr<Connection>& conn);
 	void handleDeleteArt(const shared_ptr<Connection>& conn);
 	void handleDeleteNG(const shared_ptr<Connection>& conn);
+	void writeMessage(const shared_ptr<Connection>& conn, const string& s);
 	Protocol protocol;
 	MemDatabase db;
 };

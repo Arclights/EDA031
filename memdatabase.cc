@@ -9,10 +9,10 @@ MemDatabase::MemDatabase():newsGroupsCounter(1), protocol(Protocol()){}
 
 vector<char> intToChars(int i){
 	vector<char> out;
-	out.push_back((i >> 24) & 0x000F);
-	out.push_back((i >> 16) & 0x000F);
-	out.push_back((i >> 8) & 0x000F);
-	out.push_back((i) & 0x000F);
+	out.push_back((i >> 24) & 0x000000FF);
+	out.push_back((i >> 16) & 0x000000FF);
+	out.push_back((i >> 8) & 0x000000FF);
+	out.push_back((i) & 0x000000FF);
 	return out;
 }
 
@@ -25,6 +25,7 @@ void appendIntInBytes(string& out, int i){
 
 void MemDatabase::appendString(string& out, string& s){
 	out += protocol.PAR_STRING;
+	cout << s.size() << " " << s << endl;
 	appendIntInBytes(out, s.size());
 	out += s;
 }

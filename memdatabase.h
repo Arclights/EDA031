@@ -7,6 +7,7 @@ using namespace std;
 struct Article{
 	int newsGroupID;
 	string title;
+	string author;
 	string text;
 };
 
@@ -16,6 +17,7 @@ public:
 	string addNewsGroup(const string& title);
 	string listNewsGroups();
 	string listArticles(int ngID);
+	string addArticle(int ngID, const string& title, const string& author, const string& text);
 
 private:
 	int newsGroupsCounter;

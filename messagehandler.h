@@ -17,6 +17,7 @@ private:
 	void handleListNG(const shared_ptr<Connection>& conn);
 	void handleCreateNG(const shared_ptr<Connection>& conn);
 	void handleListArt(const shared_ptr<Connection>& conn);
+	void handleCreateArt(const shared_ptr<Connection>& conn);
 	Protocol protocol;
 	MemDatabase db;
 };

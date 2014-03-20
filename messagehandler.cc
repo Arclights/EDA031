@@ -16,7 +16,7 @@ int readByte(const shared_ptr<Connection>& conn){
 	return byte1;
 }
 
-int readNumber(const shared_ptr<Connection>& conn) {
+int readInt(const shared_ptr<Connection>& conn) {
 	unsigned char byte1 = conn->read();
 	unsigned char byte2 = conn->read();
 	unsigned char byte3 = conn->read();
@@ -31,16 +31,23 @@ vector<string> splitString(string& str){
 	return arguments;
 }
 
-string readString(const shared_ptr<Connection>& conn, int charsToRead) {
+string readString(const shared_ptr<Connection>& conn) {
 	string s;
 	char ch;
 	int charsRead = 0;
+	int paramType = readByte(conn);
+	int charsToRead = readInt(conn);
 	while (charsRead < charsToRead) {
 		ch = conn->read();
 		s += ch;
 		charsRead++;
 	}
 	return s;
+}
+
+int readNumber(const shared_ptr<Connection>& conn){
+	int paramType = readByte(conn);
+	return readInt(conn);
 }
 
 void MessageHandler::handleListNG(const shared_ptr<Connection>& conn){
@@ -56,9 +63,7 @@ void MessageHandler::handleListNG(const shared_ptr<Connection>& conn){
 }
 
 void MessageHandler::handleCreateNG(const shared_ptr<Connection>& conn){
-	int paramType = readByte(conn);
-	int n = readNumber(conn);
-	string groupTitle = readString(conn, n);
+	string groupTitle = readString(conn);
 	readByte(conn); // End byte
 	
 	string dbReply = db.addNewsGroup(groupTitle);
@@ -88,8 +93,6 @@ void handleDeleteNG(const shared_ptr<Connection>& conn){
 }
 
 void MessageHandler::handleListArt(const shared_ptr<Connection>& conn){
-	int paramType = readByte(conn);
-	cout << paramType << endl;
 	int ngID = readNumber(conn);
 	readByte(conn); // End byte
 
@@ -103,19 +106,21 @@ void MessageHandler::handleListArt(const shared_ptr<Connection>& conn){
 
 }
 
-void handleCreateArt(const shared_ptr<Connection>& conn){ // Ej testad
-	int paramType;
-	int n;
-	string groupTitle;
-	paramType = readByte(conn);
-	cout << paramType << endl;
-	readByte(conn);
-	readByte(conn);
-	readByte(conn); // Av någon anledning skickas det en massa nollor innan N (?)
-	n = readByte(conn);
+void MessageHandler::handleCreateArt(const shared_ptr<Connection>& conn){
+	int ngID = readNumber(conn);
+	string title = readString(conn);
+	string author = readString(conn);
+	string text = readString(conn);
 	readByte(conn); // End byte
-	// Contact database
-	// Reply
+	
+	string dbReply = db.addArticle(ngID, title, author, text);
+
+	string message = "";
+	message += protocol.ANS_CREATE_ART;
+	message += dbReply;
+	
+	writeMessage(conn, message);
+	// writeMessage(conn, "");
 
 }
 

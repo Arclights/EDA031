@@ -25,7 +25,6 @@ void appendIntInBytes(string& out, int i){
 
 void MemDatabase::appendString(string& out, string& s){
 	out += protocol.PAR_STRING;
-	cout << s.size() << " " << s << endl;
 	appendIntInBytes(out, s.size());
 	out += s;
 }

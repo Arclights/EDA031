@@ -2,9 +2,9 @@
 
 using namespace std;
 
-class MemDatabase : public Database{
+class DiskDatabase : public Database{
 public:
-	MemDatabase();
+	DiskDatabase();
 	void addNewsGroup(const string& title) override;
 	map<int, string> getNewsGroups() override;
 	vector<pair<int, Article>> getArticles(int ngID) override;
@@ -16,7 +16,4 @@ public:
 	bool newsGroupTitleExists(const string& title) const override;
 	bool newsGroupExists(int ngID) const override;
 	bool articleExists(int artID) const override;
-private:
-	map<int, string> newsGroups;
-	map<int, Article> articles;
 };

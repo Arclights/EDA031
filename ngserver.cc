@@ -3,6 +3,7 @@
 #include "protocol.h"
 #include "misbehavingclientexception.h"
 #include "memdatabase.h"
+#include "diskdatabase.h"
 
 #include <memory>
 #include <iostream>
@@ -179,8 +180,7 @@ int main(int argc, char* argv[]){
 	if(strcmp(argv[2],"mem") == 0){
 		db = new MemDatabase;
 	} else if(strcmp(argv[2], "disk") == 0){
-		cerr << "Disk database is not yet implemented." << endl;
-		exit(1);
+		db = new DiskDatabase;
 	} else{
 		cerr << argv[2] << " is an unknown database type." << endl;
 		exit(1);

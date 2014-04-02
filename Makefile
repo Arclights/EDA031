@@ -25,7 +25,7 @@ all: $(PROGS)
 
 # Targets rely on implicit rules for compiling and linking
 # The dependency on libclientserver.a is not defined.
-ngserver: ngserver.o messagehandler.o memdatabase.o
+ngserver: ngserver.o messagehandler.o memdatabase.o diskdatabase.o
 ngclient: ngclient.o messagehandler.o
 
 # Phony targets

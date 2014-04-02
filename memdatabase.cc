@@ -2,10 +2,11 @@
 #include <iterator>
 #include <utility> 
 #include <iostream>
+#include <string.h>
 
 #include "memdatabase.h"
 
-MemDatabase::MemDatabase():newsGroupsCounter(1){}
+MemDatabase::MemDatabase(){}
 
 bool MemDatabase::newsGroupTitleExists(const string& title) const{
 	return find_if(newsGroups.begin(), newsGroups.end(), [&title](const pair<int, string>& p){return p.second == title;}) != newsGroups.end();

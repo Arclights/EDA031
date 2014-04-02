@@ -59,6 +59,7 @@ int main(int argc, char* argv[]) {
 		cerr << "Connection attempt failed" << endl;
 		exit(1);
 	}
+	auto cpconn = make_shared < Connection > (conn);
 	cout << "Type a command: ";
 	string command;
 	getline(cin, command);
@@ -67,18 +68,17 @@ int main(int argc, char* argv[]) {
 		vector<string> line = split(command, ' '); // line is the entire line splitted on whitespace
 		cout << line[0] << endl;
 
+		string message = "";
 		if (line[0] == commands.listNG) {
-			cout << "1" << endl;
 			writeNumber(conn, Protocol::COM_LIST_NG);
 			writeNumber(conn, Protocol::COM_END);
 		} else if (line[0] == commands.createNG) {
 			cout << "2" << endl;
 			if (line.size() == 2) {
-				writeNumber(conn, Protocol::COM_CREATE_NG);
-				writeNumber(conn, Protocol::PAR_STRING);
-				writeNumber(conn, line[1].size());
-				writeMessage(make_shared < Connection > (conn), line[1]);
-				writeNumber(conn, Protocol::COM_END);
+				message += Protocol::COM_CREATE_NG;
+				appendString(message, line[1]);
+				message += Protocol::COM_END;
+				writeMessage(cpconn, message);
 			} else {
 				cout
 						<< "Incorrect number of parameters. Should be \"create NAME\""
@@ -118,13 +118,13 @@ int main(int argc, char* argv[]) {
 				writeNumber(conn, grpnbr);
 				writeNumber(conn, Protocol::PAR_STRING);
 				writeNumber(conn, line[2].size());
-				writeMessage(make_shared < Connection > (conn), line[2]);
+				writeMessage(cpconn, line[2]);
 				writeNumber(conn, Protocol::PAR_STRING);
 				writeNumber(conn, line[3].size());
-				writeMessage(make_shared < Connection > (conn), line[3]);
+				writeMessage(cpconn, line[3]);
 				writeNumber(conn, Protocol::PAR_STRING);
 				writeNumber(conn, line[4].size());
-				writeMessage(make_shared < Connection > (conn), line[4]);
+				writeMessage(cpconn, line[4]);
 				writeNumber(conn, Protocol::COM_END);
 			}
 		} else if (line[0] == commands.deleteArt) {
@@ -165,22 +165,30 @@ int main(int argc, char* argv[]) {
 
 		}
 		try {
-			auto tempconn = make_shared < Connection > (conn);
-			switch (readByte(tempconn)) {
-		case Protocol::ANS_LIST_NG: {
-			int nbrOfNG = 0;
-			nbrOfNG = readNumber(tempconn);
-			cout << nbrOfNG << endl;
-			for (int i = 0; i < nbrOfNG; i++) {
-				int temp = readNumber(tempconn);
-				cout << temp << endl;
+			switch (readByte(cpconn)) {
+			case Protocol::ANS_LIST_NG: {
+				int nbrOfNG = 0;
+				nbrOfNG = readNumber(cpconn);
+				cout << nbrOfNG << endl;
+				for (int i = 0; i < nbrOfNG; i++) {
+					int temp = readNumber(cpconn);
+					cout << temp << endl;
+				}
 			}
-			readEndByteAns(tempconn);
-		}
-			break;
-		default:
-			cout << "BLARGH" << endl;
-			break;
+				readEndByteAns(cpconn);
+				break;
+			case Protocol::ANS_CREATE_NG: {
+				if (readByte(cpconn) == Protocol::ANS_ACK) {
+					cout << "Newsgroup was successfully created." << endl;
+				} else {
+					cout << "Newsgroup already exist." << endl;
+				}
+			}
+				readEndByteAns(cpconn);
+				break;
+			default:
+				cout << "BLARGH" << endl;
+				break;
 			}
 
 			//string reply = readString(make_shared<Connection>(conn));

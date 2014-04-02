@@ -18,7 +18,7 @@ public:
 	Database():newsGroupsCounter(1), artCounter(9){}
 	virtual void addNewsGroup(const string& title) = 0;
 	virtual map<int, string> getNewsGroups() = 0;
-	virtual vector<pair<int, Article>> getArticles(int ngID) = 0;
+	virtual vector<pair<int, string>> getArticles(int ngID) = 0;
 	virtual void addArticle(int ngID, const string& title, const string& author, const string& text) = 0;
 	virtual Article getArticle(int artID) = 0;
 	virtual void deleteArticle(int artID) = 0;

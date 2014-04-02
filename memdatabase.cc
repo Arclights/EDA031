@@ -28,11 +28,11 @@ map<int, string> MemDatabase::getNewsGroups(){
 	return newsGroups;
 }
 
-vector<pair<int, Article>> MemDatabase::getArticles(int ngID){
-	vector<pair<int, Article>> foundArticles;
+vector<pair<int, string>> MemDatabase::getArticles(int ngID){
+	vector<pair<int, string>> foundArticles;
 		for(pair<int, Article> art : articles){
 			if(art.second.newsGroupID == ngID){
-				foundArticles.push_back(art);
+				foundArticles.push_back({art.first, art.second.title});
 		}
 	}
 	return foundArticles;

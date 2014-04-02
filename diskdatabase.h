@@ -7,7 +7,7 @@ public:
 	DiskDatabase();
 	void addNewsGroup(const string& title) override;
 	map<int, string> getNewsGroups() override;
-	vector<pair<int, Article>> getArticles(int ngID) override;
+	vector<pair<int, string>> getArticles(int ngID) override;
 	void addArticle(int ngID, const string& title, const string& author, const string& text) override;
 	Article getArticle(int artID) override;
 	void deleteArticle(int artID) override;

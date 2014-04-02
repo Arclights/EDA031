@@ -79,12 +79,12 @@ void handleListArt(const shared_ptr<Connection>& conn, Database& db){
 		message += Protocol::ANS_NAK;
 		message += Protocol::ERR_NG_DOES_NOT_EXIST;
 	}else{
-		vector<pair<int, Article>> foundArticles = db.getArticles(ngID);
+		vector<pair<int, string>> foundArticles = db.getArticles(ngID);
 		message += Protocol::ANS_ACK;
 		appendNumber(message, foundArticles.size());
-		for(pair<int, Article> art : foundArticles){
+		for(pair<int, string> art : foundArticles){
 			appendNumber(message, art.first);
-			appendString(message, art.second.title);
+			appendString(message, art.second);
 		}
 	}
 
@@ -194,6 +194,7 @@ int main(int argc, char* argv[]){
 	
 
 	while (true) {
+		cout << "Waiting for client..." << endl;
 		auto conn = server.waitForActivity();
 		if (conn != nullptr) {
 			cout << "The client wants something" << endl;

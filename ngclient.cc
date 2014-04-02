@@ -34,9 +34,10 @@ vector<string> split(const string &s, char delim) {
  * Send an integer to the server as four bytes.
  */
 void writeNumber(const Connection& conn, int value) {
-	conn.write((value >> 24) & 0xFF);
-	conn.write((value >> 16) & 0xFF);
-	conn.write((value >> 8) & 0xFF);
+	//conn.write((value >> 24) & 0xFF);
+	//conn.write((value >> 16) & 0xFF);
+//	conn.write((value >> 8) & 0xFF);
+	cout << "value: " << value << endl;
 	conn.write(value & 0xFF);
 }
 
@@ -90,7 +91,7 @@ int main(int argc, char* argv[]) {
 				writeNumber(conn, Protocol::COM_CREATE_NG);
 				writeNumber(conn, Protocol::PAR_STRING);
 				writeNumber(conn, line[1].size());
-				writeMessage(conn, line[1]);
+				writeMessage(make_shared<Connection>(conn), line[1]);
 				writeNumber(conn, Protocol::COM_END);
 			} else {
 				cout
@@ -131,13 +132,13 @@ int main(int argc, char* argv[]) {
 				writeNumber(conn, grpnbr);
 				writeNumber(conn, Protocol::PAR_STRING);
 				writeNumber(conn, line[2].size());
-				writeMessage(conn, line[2]);
+				writeMessage(make_shared<Connection>(conn), line[2]);
 				writeNumber(conn, Protocol::PAR_STRING);
 				writeNumber(conn, line[3].size());
-				writeMessage(conn, line[3]);
+				writeMessage(make_shared<Connection>(conn), line[3]);
 				writeNumber(conn, Protocol::PAR_STRING);
 				writeNumber(conn, line[4].size());
-				writeMessage(conn, line[4]);
+				writeMessage(make_shared<Connection>(conn), line[4]);
 				writeNumber(conn, Protocol::COM_END);
 			}
 		} else if (line[0] == commands.deleteArt) {
@@ -148,7 +149,7 @@ int main(int argc, char* argv[]) {
 				deleteng = stoi(line[1]);
 				deleteart = stoi(line[2]);
 				writeNumber(conn, Protocol::COM_DELETE_ART);
-				writeNumber(conn, Protocol::PAR_NUM)
+				writeNumber(conn, Protocol::PAR_NUM);
 				writeNumber(conn, deleteng);
 				writeNumber(conn, Protocol::PAR_NUM);
 				writeNumber(conn, deleteart);
@@ -158,7 +159,7 @@ int main(int argc, char* argv[]) {
 			cout << "7" << endl;
 			int newsg = -1;
 			int artnr = -1;
-			if (line.size == 3) {
+			if (line.size() == 3) {
 				newsg = stoi(line[1]);
 				artnr = stoi(line[2]);
 				writeNumber(conn, Protocol::COM_GET_ART);

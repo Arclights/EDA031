@@ -2,16 +2,18 @@
 #include "messagehandler.h"
 #include "protocol.h"
 #include "misbehavingclientexception.h"
+#include "memdatabase.h"
 
 #include <memory>
 #include <iostream>
 #include <string>
 #include <stdexcept>
 #include <cstdlib>
+#include <string.h>
 
 using namespace std;
 
-void handleListNG(const shared_ptr<Connection>& conn, MemDatabase& db){
+void handleListNG(const shared_ptr<Connection>& conn, Database& db){
 	readEndByte(conn);
 
 	string message = "";
@@ -28,7 +30,7 @@ void handleListNG(const shared_ptr<Connection>& conn, MemDatabase& db){
 	writeMessage(conn, message);
 }
 
-void handleCreateNG(const shared_ptr<Connection>& conn, MemDatabase& db){
+void handleCreateNG(const shared_ptr<Connection>& conn, Database& db){
 	string groupTitle = readString(conn);
 	readEndByte(conn);
 	
@@ -47,7 +49,7 @@ void handleCreateNG(const shared_ptr<Connection>& conn, MemDatabase& db){
 
 }
 
-void handleDeleteNG(const shared_ptr<Connection>& conn, MemDatabase& db){
+void handleDeleteNG(const shared_ptr<Connection>& conn, Database& db){
 	int ngID = readNumber(conn);
 	readEndByte(conn);
 
@@ -66,7 +68,7 @@ void handleDeleteNG(const shared_ptr<Connection>& conn, MemDatabase& db){
 
 }
 
-void handleListArt(const shared_ptr<Connection>& conn, MemDatabase& db){
+void handleListArt(const shared_ptr<Connection>& conn, Database& db){
 	int ngID = readNumber(conn);
 	readEndByte(conn);
 
@@ -89,7 +91,7 @@ void handleListArt(const shared_ptr<Connection>& conn, MemDatabase& db){
 
 }
 
-void handleCreateArt(const shared_ptr<Connection>& conn, MemDatabase& db){
+void handleCreateArt(const shared_ptr<Connection>& conn, Database& db){
 	int ngID = readNumber(conn);
 	string title = readString(conn);
 	string author = readString(conn);
@@ -110,7 +112,7 @@ void handleCreateArt(const shared_ptr<Connection>& conn, MemDatabase& db){
 
 }
 
-void handleDeleteArt(const shared_ptr<Connection>& conn, MemDatabase& db){
+void handleDeleteArt(const shared_ptr<Connection>& conn, Database& db){
 	int ngID = readNumber(conn);
 	int artID = readNumber(conn);
 	readEndByte(conn);
@@ -133,7 +135,7 @@ void handleDeleteArt(const shared_ptr<Connection>& conn, MemDatabase& db){
 	writeMessage(conn, message);
 }
 
-void handleGetArt(const shared_ptr<Connection>& conn, MemDatabase& db){
+void handleGetArt(const shared_ptr<Connection>& conn, Database& db){
 	int ngID = readNumber(conn);
 	int artID = readNumber(conn);
 	readEndByte(conn);
@@ -160,8 +162,8 @@ void handleGetArt(const shared_ptr<Connection>& conn, MemDatabase& db){
 }
 
 int main(int argc, char* argv[]){
-	if (argc != 2) {
-		cerr << "Usage: myserver port-number" << endl;
+	if (argc != 3) {
+		cerr << "Usage: myserver port-number [mem|disk]" << endl;
 		exit(1);
 	}
 
@@ -172,6 +174,17 @@ int main(int argc, char* argv[]){
 		cerr << "Wrong port number. " << e.what() << endl;
 		exit(1);
 	}
+
+	Database* db;
+	if(strcmp(argv[2],"mem") == 0){
+		db = new MemDatabase;
+	} else if(strcmp(argv[2], "disk") == 0){
+		cerr << "Disk database is not yet implemented." << endl;
+		exit(1);
+	} else{
+		cerr << argv[2] << " is an unknown database type." << endl;
+		exit(1);
+	}
 	
 	Server server(port);
 	if (!server.isReady()) {
@@ -179,7 +192,6 @@ int main(int argc, char* argv[]){
 		exit(1);
 	}
 	
-	MemDatabase db;
 
 	while (true) {
 		auto conn = server.waitForActivity();
@@ -187,28 +199,28 @@ int main(int argc, char* argv[]){
 			cout << "The client wants something" << endl;
 			try {
 				int command = readByte(conn);
-				cout << command << endl;
+				cout << "Command: " << command << endl;
 				switch(command){
 				case Protocol::COM_LIST_NG:
-					handleListNG(conn, db);
+					handleListNG(conn, *db);
 					break;
 				case Protocol::COM_CREATE_NG:
-					handleCreateNG(conn, db);
+					handleCreateNG(conn, *db);
 					break;
 				case Protocol::COM_DELETE_NG:
-					handleDeleteNG(conn, db);
+					handleDeleteNG(conn, *db);
 					break;
 				case Protocol::COM_LIST_ART:
-					handleListArt(conn, db);
+					handleListArt(conn, *db);
 					break;
 				case Protocol::COM_CREATE_ART:
-					handleCreateArt(conn, db);
+					handleCreateArt(conn, *db);
 					break;
 				case Protocol::COM_DELETE_ART:
-					handleDeleteArt(conn, db);
+					handleDeleteArt(conn, *db);
 					break;
 				case Protocol::COM_GET_ART:
-					handleGetArt(conn, db);
+					handleGetArt(conn, *db);
 					break;
 				default:
 					throw MisbehavingClientException();

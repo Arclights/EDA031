@@ -19,14 +19,14 @@ LDFLAGS =   -g -L.
 LDLIBS = -lclientserver
 
 # Targets
-PROGS = ngserver
+PROGS = ngserver ngclient
 
 all: $(PROGS)
 
 # Targets rely on implicit rules for compiling and linking
 # The dependency on libclientserver.a is not defined.
-ngserver:  ngserver.o messagehandler.o memdatabase.o
-#myclient: myclient.o
+ngserver: ngserver.o messagehandler.o memdatabase.o
+ngclient: ngclient.o messagehandler.o
 
 # Phony targets
 .PHONY: all clean

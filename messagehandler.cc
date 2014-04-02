@@ -1,5 +1,6 @@
 #include "messagehandler.h"
 #include "misbehavingclientexception.h"
+#include "protocol.h"
 
 #include <iostream>
 #include <algorithm>

@@ -37,20 +37,7 @@ void writeNumber(const Connection& conn, int value) {
 	//conn.write((value >> 24) & 0xFF);
 	//conn.write((value >> 16) & 0xFF);
 //	conn.write((value >> 8) & 0xFF);
-	cout << "value: " << value << endl;
 	conn.write(value & 0xFF);
-}
-
-/*
- * Read a string from the server.
- */
-string readString(const Connection& conn) {
-	string s;
-	char ch;
-	while ((ch = conn.read()) != '$') {
-		s += ch;
-	}
-	return s;
 }
 
 int main(int argc, char* argv[]) {
@@ -74,7 +61,6 @@ int main(int argc, char* argv[]) {
 	}
 	cout << "Type a command: ";
 	string command;
-	int nbr;
 	getline(cin, command);
 	while (true) {
 
@@ -91,7 +77,7 @@ int main(int argc, char* argv[]) {
 				writeNumber(conn, Protocol::COM_CREATE_NG);
 				writeNumber(conn, Protocol::PAR_STRING);
 				writeNumber(conn, line[1].size());
-				writeMessage(make_shared<Connection>(conn), line[1]);
+				writeMessage(make_shared < Connection > (conn), line[1]);
 				writeNumber(conn, Protocol::COM_END);
 			} else {
 				cout
@@ -132,13 +118,13 @@ int main(int argc, char* argv[]) {
 				writeNumber(conn, grpnbr);
 				writeNumber(conn, Protocol::PAR_STRING);
 				writeNumber(conn, line[2].size());
-				writeMessage(make_shared<Connection>(conn), line[2]);
+				writeMessage(make_shared < Connection > (conn), line[2]);
 				writeNumber(conn, Protocol::PAR_STRING);
 				writeNumber(conn, line[3].size());
-				writeMessage(make_shared<Connection>(conn), line[3]);
+				writeMessage(make_shared < Connection > (conn), line[3]);
 				writeNumber(conn, Protocol::PAR_STRING);
 				writeNumber(conn, line[4].size());
-				writeMessage(make_shared<Connection>(conn), line[4]);
+				writeMessage(make_shared < Connection > (conn), line[4]);
 				writeNumber(conn, Protocol::COM_END);
 			}
 		} else if (line[0] == commands.deleteArt) {
@@ -179,10 +165,26 @@ int main(int argc, char* argv[]) {
 
 		}
 		try {
-			cout << nbr << " is ...";
-			writeNumber(conn, nbr);
-			string reply = readString(conn);
-			cout << " " << reply << endl;
+			auto tempconn = make_shared < Connection > (conn);
+			switch (readByte(tempconn)) {
+		case Protocol::ANS_LIST_NG: {
+			int nbrOfNG = 0;
+			nbrOfNG = readNumber(tempconn);
+			cout << nbrOfNG << endl;
+			for (int i = 0; i < nbrOfNG; i++) {
+				int temp = readNumber(tempconn);
+				cout << temp << endl;
+			}
+			readEndByteAns(tempconn);
+		}
+			break;
+		default:
+			cout << "BLARGH" << endl;
+			break;
+			}
+
+			//string reply = readString(make_shared<Connection>(conn));
+			//cout << reply << endl;
 			cout << "Type another command: ";
 			getline(cin, command);
 		} catch (ConnectionClosedException&) {

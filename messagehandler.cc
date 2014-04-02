@@ -63,6 +63,13 @@ void readEndByte(const shared_ptr<Connection>& conn){
 	}
 }
 
+void readEndByteAns(const shared_ptr<Connection>& conn){
+	int paramType = readByte(conn);
+	if(paramType != Protocol::ANS_END){
+		throw MisbehavingClientException();
+	}
+}
+
 vector<char> intToChars(int i){
 	vector<char> out;
 	out.push_back((i >> 24) & 0x000000FF);

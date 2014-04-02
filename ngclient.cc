@@ -3,6 +3,8 @@
 #include "connection.h"
 #include "commands.h"
 #include "connectionclosedexception.h"
+#include "messagehandler.h"
+#include "protocol.h"
 
 #include <iostream>
 #include <string>
@@ -14,19 +16,18 @@
 using namespace std;
 
 vector<string> &split(const string &s, char delim, vector<string> &elems) {
-    stringstream ss(s);
-    string item;
-    while (getline(ss, item, delim)) {
-        elems.push_back(item);
-    }
-    return elems;
+	stringstream ss(s);
+	string item;
+	while (getline(ss, item, delim)) {
+		elems.push_back(item);
+	}
+	return elems;
 }
 
-
 vector<string> split(const string &s, char delim) {
-    vector<string> elems;
-    split(s, delim, elems);
-    return elems;
+	vector<string> elems;
+	split(s, delim, elems);
+	return elems;
 }
 
 /*
@@ -81,25 +82,99 @@ int main(int argc, char* argv[]) {
 
 		if (line[0] == commands.listNG) {
 			cout << "1" << endl;
+			writeNumber(conn, Protocol::COM_LIST_NG);
+			writeNumber(conn, Protocol::COM_END);
 		} else if (line[0] == commands.createNG) {
 			cout << "2" << endl;
+			if (line.size() == 2) {
+				writeNumber(conn, Protocol::COM_CREATE_NG);
+				writeNumber(conn, Protocol::PAR_STRING);
+				writeNumber(conn, line[1].size());
+				writeMessage(conn, line[1]);
+				writeNumber(conn, Protocol::COM_END);
+			} else {
+				cout
+						<< "Incorrect number of parameters. Should be \"create NAME\""
+						<< endl;
+			}
 		} else if (line[0] == commands.deleteNG) {
 			cout << "3" << endl;
+			int deletes = -1;
+			if (line.size() == 2) {
+				deletes = stoi(line[1]);
+				writeNumber(conn, Protocol::COM_DELETE_NG);
+				writeNumber(conn, Protocol::PAR_NUM);
+				writeNumber(conn, deletes);
+				writeNumber(conn, Protocol::COM_END);
+			} else {
+
+			}
 		} else if (line[0] == commands.listArt) {
 			cout << "4" << endl;
+			int listng = -1;
+			if (line.size() == 2) {
+				listng = stoi(line[1]);
+				writeNumber(conn, Protocol::COM_LIST_ART);
+				writeNumber(conn, Protocol::PAR_NUM);
+				writeNumber(conn, listng);
+				writeNumber(conn, Protocol::COM_END);
+			} else {
+
+			}
 		} else if (line[0] == commands.createArt) {
 			cout << "5" << endl;
+			int grpnbr = -1;
+			if (line.size() == 5) {
+				writeNumber(conn, Protocol::COM_DELETE_ART);
+				writeNumber(conn, Protocol::PAR_NUM);
+				grpnbr = stoi(line[1]);
+				writeNumber(conn, grpnbr);
+				writeNumber(conn, Protocol::PAR_STRING);
+				writeNumber(conn, line[2].size());
+				writeMessage(conn, line[2]);
+				writeNumber(conn, Protocol::PAR_STRING);
+				writeNumber(conn, line[3].size());
+				writeMessage(conn, line[3]);
+				writeNumber(conn, Protocol::PAR_STRING);
+				writeNumber(conn, line[4].size());
+				writeMessage(conn, line[4]);
+				writeNumber(conn, Protocol::COM_END);
+			}
 		} else if (line[0] == commands.deleteArt) {
 			cout << "6" << endl;
+			int deleteng = -1;
+			int deleteart = -1;
+			if (line.size() == 3) {
+				deleteng = stoi(line[1]);
+				deleteart = stoi(line[2]);
+				writeNumber(conn, Protocol::COM_DELETE_ART);
+				writeNumber(conn, Protocol::PAR_NUM)
+				writeNumber(conn, deleteng);
+				writeNumber(conn, Protocol::PAR_NUM);
+				writeNumber(conn, deleteart);
+				writeNumber(conn, Protocol::COM_END);
+			}
 		} else if (line[0] == commands.readArt) {
 			cout << "7" << endl;
+			int newsg = -1;
+			int artnr = -1;
+			if (line.size == 3) {
+				newsg = stoi(line[1]);
+				artnr = stoi(line[2]);
+				writeNumber(conn, Protocol::COM_GET_ART);
+				writeNumber(conn, Protocol::PAR_NUM);
+				writeNumber(conn, newsg);
+				writeNumber(conn, Protocol::PAR_NUM);
+				writeNumber(conn, artnr);
+				writeNumber(conn, Protocol::COM_END);
+			}
 		} else if (line[0] == commands.help && line.size() == 1) {
 			cout << "Available commands are:" << endl;
 			cout << "read" << endl;
 		} else {
 			cout << "Use help to show available commands." << endl;
 		}
-		for(int i = 1; i < line.size(); i++){
+		for (int i = 1; i < line.size(); i++) {
 
 		}
 		try {
@@ -115,5 +190,4 @@ int main(int argc, char* argv[]) {
 		}
 	}
 }
-
 

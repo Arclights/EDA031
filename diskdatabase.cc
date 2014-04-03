@@ -109,7 +109,7 @@ Article DiskDatabase::getArticle(int ngID, int artID){// Klar
 }
 
 void DiskDatabase::deleteArticle(int ngID, int artID){
-	
+	remove(("database/" + getNewGroupDirName(ngID) + "/" + to_string(artID)).c_str());
 }
 
 void DiskDatabase::deleteNewsGroup(int ngID){// Klar

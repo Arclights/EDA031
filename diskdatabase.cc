@@ -5,18 +5,20 @@
 #include <stdio.h>
 #include <sstream>
 #include <fstream>
+#include <algorithm>
+#include <limits.h>
 
 #include <iostream>
 
 #include "diskdatabase.h"
 
-DiskDatabase::DiskDatabase(){
-	mkdir("database", 0777);
-	//Fixa så att om det är en gammal databas så ska gamla max-nycklar läsas in
-}
-
-void DiskDatabase::addNewsGroup(const string& title){// Klar
-	mkdir((string("database/") + to_string(newsGroupsCounter++) + " " + title).c_str(), 0777);
+// For testing
+void printDir(){
+	DIR* dp = opendir("database");
+	struct dirent *entry;
+	while((entry = readdir(dp))){
+		cout << entry->d_name << endl;
+	}
 }
 
 vector<string> getFolderNameParts(string name){
@@ -43,16 +45,59 @@ string getNewGroupDirName(int ngID){
 	return NULL;
 }
 
-// For testing
-void printDir(){
+int getNextUniqueNewsGroupID(){
+	vector<int> ids;
 	DIR* dp = opendir("database");
 	struct dirent *entry;
 	while((entry = readdir(dp))){
-		cout << entry->d_name << endl;
+		if(string(entry->d_name).compare(".") != 0 && string(entry->d_name).compare("..") != 0 ){
+			vector<string> parts = getFolderNameParts(string(entry->d_name));
+			ids.push_back(stoi(parts[0]));
+		}
 	}
+	closedir(dp);
+
+	if(ids.empty()){
+		return 1;
+	}
+
+	sort(ids.begin(), ids.end());
+	return ids[ids.size() - 1] + 1;
 }
 
-map<int, string> DiskDatabase::getNewsGroups(){// Klar
+int getNextUniqueArticleID(int ngID){
+	vector<int> ids;
+	DIR* dp = opendir(("database/" + getNewGroupDirName(ngID)).c_str());
+	struct dirent *entry;
+	while((entry = readdir(dp))){
+		if(string(entry->d_name).compare(".") != 0 && string(entry->d_name).compare("..") != 0 ){
+			ids.push_back(stoi(entry->d_name));
+		}
+	}
+	closedir(dp);
+
+	if(ids.empty()){
+		return 0;
+	}
+
+	sort(ids.begin(), ids.end());
+	return ids[ids.size() - 1] + 1;
+}
+
+DiskDatabase::DiskDatabase(){
+	mkdir("database", 0777);
+	//Fixa så att om det är en gammal databas så ska gamla max-nycklar läsas in
+	printDir();
+}
+
+
+
+void DiskDatabase::addNewsGroup(const string& title){
+	mkdir((string("database/") + to_string(getNextUniqueNewsGroupID()) + " " + title).c_str(), 0777);
+}
+
+
+map<int, string> DiskDatabase::getNewsGroups(){
 	map<int, string> out;
 	DIR* dp = opendir("database");
 	struct dirent *entry;
@@ -83,18 +128,18 @@ map<int, string> DiskDatabase::getArticles(int ngID){
 	return out;
 }
 
-void DiskDatabase::addArticle(int ngID, const string& title, const string& author, const string& text){// Klar
+void DiskDatabase::addArticle(int ngID, const string& title, const string& author, const string& text){
 	FILE *fp;
-	fp = fopen(("database/" + getNewGroupDirName(ngID) + "/" + to_string(artCounter++)).c_str(), "w");
-	fprintf(fp, title.c_str());
+	fp = fopen(("database/" + getNewGroupDirName(ngID) + "/" + to_string(getNextUniqueArticleID(ngID))).c_str(), "w");
+	fprintf(fp, "%s", title.c_str());
 	fprintf(fp, "\n");
-	fprintf(fp, author.c_str());
+	fprintf(fp, "%s", author.c_str());
 	fprintf(fp, "\n");
-	fprintf(fp, text.c_str());
+	fprintf(fp, "%s", text.c_str());
 	fclose(fp);
 }
 
-Article DiskDatabase::getArticle(int ngID, int artID){// Klar
+Article DiskDatabase::getArticle(int ngID, int artID){
 	ifstream infile(("database/" + getNewGroupDirName(ngID) + "/" + to_string(artID)).c_str());
 	stringstream buffer;
 	buffer << infile.rdbuf();
@@ -115,12 +160,10 @@ void DiskDatabase::deleteArticle(int ngID, int artID){
 void DiskDatabase::deleteNewsGroup(int ngID){// Klar
 	DIR* dp = opendir("database");
 	struct dirent *entry;
-	cout << "Want to delete " << ngID << endl;
 	while((entry = readdir(dp))){
 		if(string(entry->d_name).compare(".") != 0 && string(entry->d_name).compare("..") != 0 ){
 			vector<string> parts = getFolderNameParts(string(entry->d_name));
 			if(parts[0].compare(to_string(ngID)) == 0){
-				cout << "removing " << ("database/" + string(entry->d_name)) << endl;
 				remove(("database/" + string(entry->d_name)).c_str());
 				break;
 			}
@@ -129,7 +172,7 @@ void DiskDatabase::deleteNewsGroup(int ngID){// Klar
 	closedir(dp);
 }
 
-bool DiskDatabase::newsGroupTitleExists(const string& title) const{// Klar
+bool DiskDatabase::newsGroupTitleExists(const string& title) const{
 	DIR* dp = opendir("database");
 	struct dirent *entry;
 	while((entry = readdir(dp))){
@@ -144,7 +187,7 @@ bool DiskDatabase::newsGroupTitleExists(const string& title) const{// Klar
 	return 0;
 }
 
-bool DiskDatabase::newsGroupExists(int ngID) const{// Klar
+bool DiskDatabase::newsGroupExists(int ngID) const{
 	DIR* dp = opendir("database");
 	struct dirent *entry;
 	while((entry = readdir(dp))){

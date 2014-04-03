@@ -7,6 +7,7 @@
 #include <fstream>
 #include <algorithm>
 #include <limits.h>
+#include <functional>
 
 #include <iostream>
 
@@ -86,8 +87,6 @@ int getNextUniqueArticleID(int ngID){
 
 DiskDatabase::DiskDatabase(){
 	mkdir("database", 0777);
-	//Fixa så att om det är en gammal databas så ska gamla max-nycklar läsas in
-	printDir();
 }
 
 
@@ -157,7 +156,7 @@ void DiskDatabase::deleteArticle(int ngID, int artID){
 	remove(("database/" + getNewGroupDirName(ngID) + "/" + to_string(artID)).c_str());
 }
 
-void DiskDatabase::deleteNewsGroup(int ngID){// Klar
+void DiskDatabase::deleteNewsGroup(int ngID){
 	DIR* dp = opendir("database");
 	struct dirent *entry;
 	while((entry = readdir(dp))){
@@ -172,46 +171,28 @@ void DiskDatabase::deleteNewsGroup(int ngID){// Klar
 	closedir(dp);
 }
 
-bool DiskDatabase::newsGroupTitleExists(const string& title) const{
-	DIR* dp = opendir("database");
+bool applyOnFile(function<bool (const string&)> applyFunc, const string& dir){
+	DIR* dp = opendir(dir.c_str());
 	struct dirent *entry;
 	while((entry = readdir(dp))){
 		if(string(entry->d_name).compare(".") != 0 && string(entry->d_name).compare("..") != 0 ){
-			vector<string> parts = getFolderNameParts(string(entry->d_name));
-			if(title.compare(parts[1]) == 0){
+			if(applyFunc(string(entry->d_name))){
 				return 1;
 			}
 		}
 	}
 	closedir(dp);
-	return 0;
+	return 0;	
+}
+
+bool DiskDatabase::newsGroupTitleExists(const string& title) const{
+	return applyOnFile([title](const string& s){vector<string> parts = getFolderNameParts(s); return title.compare(parts[1]) == 0;}, "database");
 }
 
 bool DiskDatabase::newsGroupExists(int ngID) const{
-	DIR* dp = opendir("database");
-	struct dirent *entry;
-	while((entry = readdir(dp))){
-		if(string(entry->d_name).compare(".") != 0 && string(entry->d_name).compare("..") != 0 ){
-			vector<string> parts = getFolderNameParts(string(entry->d_name));
-			if(ngID == stoi(parts[0])){
-				return 1;
-			}
-		}
-	}
-	closedir(dp);
-	return 0;
+	return applyOnFile([ngID](const string& s){vector<string> parts = getFolderNameParts(s); return to_string(ngID).compare(parts[0]) == 0;}, "database");
 }
 
 bool DiskDatabase::articleExists(int ngID, int artID) const{
-	DIR* dp = opendir(("database/" + getNewGroupDirName(ngID)).c_str());
-	struct dirent *entry;
-	while((entry = readdir(dp))){
-		if(string(entry->d_name).compare(".") != 0 && string(entry->d_name).compare("..") != 0 ){
-			if(artID == stoi(entry->d_name)){
-				return 1;
-			}
-		}
-	}
-	closedir(dp);
-	return 0;
+	return applyOnFile([artID](const string& s){return to_string(artID).compare(s) == 0;}, "database/" + getNewGroupDirName(ngID));
 }

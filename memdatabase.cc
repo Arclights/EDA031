@@ -16,8 +16,8 @@ bool MemDatabase::newsGroupExists(int ngID) const{
 	return newsGroups.find(ngID) != newsGroups.end();
 }
 
-bool MemDatabase::articleExists(int artID) const{
-	return articles.find(artID) != articles.end();
+bool MemDatabase::articleExists(int ngID, int artID) const{
+	return articles.at(ngID).find(artID) != articles.at(ngID).end();
 }
 
 void MemDatabase::addNewsGroup(const string& title){
@@ -28,39 +28,32 @@ map<int, string> MemDatabase::getNewsGroups(){
 	return newsGroups;
 }
 
-vector<pair<int, string>> MemDatabase::getArticles(int ngID){
-	vector<pair<int, string>> foundArticles;
-		for(pair<int, Article> art : articles){
-			if(art.second.newsGroupID == ngID){
-				foundArticles.push_back({art.first, art.second.title});
+map<int, string> MemDatabase::getArticles(int ngID){
+	map<int, string> foundArticles;
+		for(pair<int, Article> art : articles[ngID]){
+			foundArticles.insert({art.first, art.second.title});
 		}
-	}
 	return foundArticles;
 }
 
 void MemDatabase::addArticle(int ngID, const string& title, const string& author, const string& text){
 	Article article;
-	article.newsGroupID = ngID;
 	article.title = title;
 	article.author = author;
 	article.text = text;
-	articles.insert({artCounter++, article});
-}
-
-Article MemDatabase::getArticle(int artID){
-	return articles[artID];
-}
-
-void MemDatabase::deleteArticle(int artID){
-	articles.erase(artID);
-}
-
-void MemDatabase::deleteArticlesInNewsGroup(int ngID){
-	for(pair<int, Article> art:articles){
-		if(art.second.newsGroupID == ngID){
-			deleteArticle(art.first);
-		}
+	auto arts = articles.find(ngID);
+	if(arts == articles.end()){
+		articles.insert({ngID, map<int, Article>()});
 	}
+	articles[ngID].insert({artCounter++, article});
+}
+
+Article MemDatabase::getArticle(int ngID, int artID){
+	return articles[ngID][artID];
+}
+
+void MemDatabase::deleteArticle(int ngID, int artID){
+	articles.at(ngID).erase(artID);
 }
 
 void MemDatabase::deleteNewsGroup(int ngID){

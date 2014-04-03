@@ -60,7 +60,6 @@ void handleDeleteNG(const shared_ptr<Connection>& conn, Database& db){
 		message += Protocol::ANS_NAK;
 		message += Protocol::ERR_NG_DOES_NOT_EXIST;
 	}else{
-		db.deleteArticlesInNewsGroup(ngID);
 		db.deleteNewsGroup(ngID);
 		message += Protocol::ANS_ACK;
 	}
@@ -79,7 +78,7 @@ void handleListArt(const shared_ptr<Connection>& conn, Database& db){
 		message += Protocol::ANS_NAK;
 		message += Protocol::ERR_NG_DOES_NOT_EXIST;
 	}else{
-		vector<pair<int, string>> foundArticles = db.getArticles(ngID);
+		map<int, string> foundArticles = db.getArticles(ngID);
 		message += Protocol::ANS_ACK;
 		appendNumber(message, foundArticles.size());
 		for(pair<int, string> art : foundArticles){
@@ -124,11 +123,11 @@ void handleDeleteArt(const shared_ptr<Connection>& conn, Database& db){
 		message += Protocol::ANS_NAK;
 		message += Protocol::ERR_NG_DOES_NOT_EXIST;
 	}else{
-		if(!db.articleExists(artID)){
+		if(!db.articleExists(ngID, artID)){
 			message += Protocol::ANS_NAK;
 			message += Protocol::ERR_ART_DOES_NOT_EXIST;
 		}else{
-			db.deleteArticle(artID);
+			db.deleteArticle(ngID, artID);
 			message += Protocol::ANS_ACK;
 		}
 	}
@@ -147,12 +146,12 @@ void handleGetArt(const shared_ptr<Connection>& conn, Database& db){
 		message += Protocol::ANS_NAK;
 		message += Protocol::ERR_NG_DOES_NOT_EXIST;
 	}else{
-		if(!db.articleExists(artID)){
+		if(!db.articleExists(ngID, artID)){
 			message += Protocol::ANS_NAK;
 			message += Protocol::ERR_ART_DOES_NOT_EXIST;
 		}else{
 			message += Protocol::ANS_ACK;
-			Article art = db.getArticle(artID);
+			Article art = db.getArticle(ngID, artID);
 			appendString(message, art.title);
 			appendString(message, art.author);
 			appendString(message, art.text);

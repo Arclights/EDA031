@@ -13,15 +13,10 @@
 
 #include "diskdatabase.h"
 
-// For testing
-void printDir(){
-	DIR* dp = opendir("database");
-	struct dirent *entry;
-	while((entry = readdir(dp))){
-		cout << entry->d_name << endl;
-	}
-}
-
+/*
+ * Splits the name of folders that represent news groups.
+ * The returned values are the id ocf the news group and the name
+ */
 vector<string> getFolderNameParts(string name){
 	vector<string> out;
 	auto split = name.find_first_of(" ");
@@ -30,6 +25,27 @@ vector<string> getFolderNameParts(string name){
 	return out;
 }
 
+/*
+ * Applies a function to one or more files in directory dir.
+ * The function passed needs to return a boolean to signal if this function should stop or continue
+ */
+bool applyOnFiles(function<bool (const string&)> funcToApply, const string& dir){
+	DIR* dp = opendir(dir.c_str());
+	struct dirent *entry;
+	while((entry = readdir(dp))){
+		if(string(entry->d_name).compare(".") != 0 && string(entry->d_name).compare("..") != 0 ){
+			if(funcToApply(string(entry->d_name))){
+				return 1;
+			}
+		}
+	}
+	closedir(dp);
+	return 0;	
+}
+
+/*
+ *Returns the news group name based on a news group id
+ */
 string getNewGroupDirName(int ngID){
 	DIR* dp = opendir("database");
 	struct dirent *entry;
@@ -48,15 +64,8 @@ string getNewGroupDirName(int ngID){
 
 int getNextUniqueNewsGroupID(){
 	vector<int> ids;
-	DIR* dp = opendir("database");
-	struct dirent *entry;
-	while((entry = readdir(dp))){
-		if(string(entry->d_name).compare(".") != 0 && string(entry->d_name).compare("..") != 0 ){
-			vector<string> parts = getFolderNameParts(string(entry->d_name));
-			ids.push_back(stoi(parts[0]));
-		}
-	}
-	closedir(dp);
+	function<bool (const string&)> funcToApply = [&ids](const string& s){vector<string> parts = getFolderNameParts(s); ids.push_back(stoi(parts[0])); return 0;};
+	applyOnFiles(funcToApply, "database");
 
 	if(ids.empty()){
 		return 1;
@@ -68,14 +77,8 @@ int getNextUniqueNewsGroupID(){
 
 int getNextUniqueArticleID(int ngID){
 	vector<int> ids;
-	DIR* dp = opendir(("database/" + getNewGroupDirName(ngID)).c_str());
-	struct dirent *entry;
-	while((entry = readdir(dp))){
-		if(string(entry->d_name).compare(".") != 0 && string(entry->d_name).compare("..") != 0 ){
-			ids.push_back(stoi(entry->d_name));
-		}
-	}
-	closedir(dp);
+	function<bool (const string&)> funcToApply = [&ids](const string& s){ids.push_back(stoi(s)); return 0;};
+	applyOnFiles(funcToApply, "database/" + getNewGroupDirName(ngID));
 
 	if(ids.empty()){
 		return 0;
@@ -95,18 +98,10 @@ void DiskDatabase::addNewsGroup(const string& title){
 	mkdir((string("database/") + to_string(getNextUniqueNewsGroupID()) + " " + title).c_str(), 0777);
 }
 
-
 map<int, string> DiskDatabase::getNewsGroups(){
 	map<int, string> out;
-	DIR* dp = opendir("database");
-	struct dirent *entry;
-	while((entry = readdir(dp))){
-		if(string(entry->d_name).compare(".") != 0 && string(entry->d_name).compare("..") != 0 ){
-			vector<string> parts = getFolderNameParts(string(entry->d_name));
-			out.insert({stoi(parts[0]), parts[1]});
-		}
-	}
-	closedir(dp);
+	function<bool (const string&)> funcToApply = [&out](const string& s){vector<string> parts = getFolderNameParts(s); out.insert(make_pair(stoi(parts[0]), parts[1])); return 0;};
+	applyOnFiles(funcToApply, "database");
 	return out;
 }
 
@@ -157,42 +152,21 @@ void DiskDatabase::deleteArticle(int ngID, int artID){
 }
 
 void DiskDatabase::deleteNewsGroup(int ngID){
-	DIR* dp = opendir("database");
-	struct dirent *entry;
-	while((entry = readdir(dp))){
-		if(string(entry->d_name).compare(".") != 0 && string(entry->d_name).compare("..") != 0 ){
-			vector<string> parts = getFolderNameParts(string(entry->d_name));
-			if(parts[0].compare(to_string(ngID)) == 0){
-				remove(("database/" + string(entry->d_name)).c_str());
-				break;
-			}
-		}
-	}
-	closedir(dp);
-}
-
-bool applyOnFile(function<bool (const string&)> applyFunc, const string& dir){
-	DIR* dp = opendir(dir.c_str());
-	struct dirent *entry;
-	while((entry = readdir(dp))){
-		if(string(entry->d_name).compare(".") != 0 && string(entry->d_name).compare("..") != 0 ){
-			if(applyFunc(string(entry->d_name))){
-				return 1;
-			}
-		}
-	}
-	closedir(dp);
-	return 0;	
+	function<bool (const string&)> funcToApply = [ngID](const string& s){vector<string> parts = getFolderNameParts(string(s)); return parts[0].compare(to_string(ngID)) == 0 ? remove(("database/" + string(s)).c_str()) : 0;};
+	applyOnFiles(funcToApply, "database");
 }
 
 bool DiskDatabase::newsGroupTitleExists(const string& title) const{
-	return applyOnFile([title](const string& s){vector<string> parts = getFolderNameParts(s); return title.compare(parts[1]) == 0;}, "database");
+	function<bool (const string&)> funcToApply = [title](const string& s){vector<string> parts = getFolderNameParts(s); return title.compare(parts[1]) == 0;};
+	return applyOnFiles(funcToApply, "database");
 }
 
 bool DiskDatabase::newsGroupExists(int ngID) const{
-	return applyOnFile([ngID](const string& s){vector<string> parts = getFolderNameParts(s); return to_string(ngID).compare(parts[0]) == 0;}, "database");
+	function<bool (const string&)> funcToApply = [ngID](const string& s){vector<string> parts = getFolderNameParts(s); return to_string(ngID).compare(parts[0]) == 0;};
+	return applyOnFiles(funcToApply, "database");
 }
 
 bool DiskDatabase::articleExists(int ngID, int artID) const{
-	return applyOnFile([artID](const string& s){return to_string(artID).compare(s) == 0;}, "database/" + getNewGroupDirName(ngID));
+	function<bool (const string&)> funcToApply = [artID](const string& s){return to_string(artID).compare(s) == 0;};
+	return applyOnFiles(funcToApply, "database/" + getNewGroupDirName(ngID));
 }

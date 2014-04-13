@@ -66,12 +66,12 @@ int main(int argc, char* argv[]) {
 	while (true) {
 
 		vector<string> line = split(command, ' '); // line is the entire line splitted on whitespace
-		cout << line[0] << endl;
 
 		string message = "";
 		if (line[0] == commands.listNG) {
-			writeNumber(conn, Protocol::COM_LIST_NG);
-			writeNumber(conn, Protocol::COM_END);
+			message += Protocol::COM_LIST_NG;
+			message += Protocol::COM_END;
+			writeMessage(cpconn, message);
 		} else if (line[0] == commands.createNG) {
 			cout << "2" << endl;
 			if (line.size() == 2) {
@@ -81,7 +81,7 @@ int main(int argc, char* argv[]) {
 				writeMessage(cpconn, message);
 			} else {
 				cout
-						<< "Incorrect number of parameters. Should be \"create NAME\""
+						<< "Incorrect number of parameters. Should be \"createNG NAME\""
 						<< endl;
 			}
 		} else if (line[0] == commands.deleteNG) {
@@ -161,30 +161,32 @@ int main(int argc, char* argv[]) {
 		} else {
 			cout << "Use help to show available commands." << endl;
 		}
-		for (int i = 1; i < line.size(); i++) {
-
-		}
 		try {
+			int nbrOfNG = 0;
 			switch (readByte(cpconn)) {
-			case Protocol::ANS_LIST_NG: {
-				int nbrOfNG = 0;
+			case Protocol::ANS_LIST_NG:
+
 				nbrOfNG = readNumber(cpconn);
 				cout << nbrOfNG << endl;
 				for (int i = 0; i < nbrOfNG; i++) {
-					int temp = readNumber(cpconn);
+					int tempInt = readNumber(cpconn);
+					cout << tempInt << " ";
+					string temp = readString(cpconn);
 					cout << temp << endl;
 				}
-			}
+
 				readEndByteAns(cpconn);
+
 				break;
-			case Protocol::ANS_CREATE_NG: {
+			case Protocol::ANS_CREATE_NG:
 				if (readByte(cpconn) == Protocol::ANS_ACK) {
 					cout << "Newsgroup was successfully created." << endl;
 				} else {
 					cout << "Newsgroup already exist." << endl;
 				}
-			}
+
 				readEndByteAns(cpconn);
+
 				break;
 			default:
 				cout << "BLARGH" << endl;

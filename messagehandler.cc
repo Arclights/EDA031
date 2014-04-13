@@ -65,6 +65,7 @@ void readEndByte(const shared_ptr<Connection>& conn){
 
 void readEndByteAns(const shared_ptr<Connection>& conn){
 	int paramType = readByte(conn);
+	cout << paramType << " HEJ" << endl;
 	if(paramType != Protocol::ANS_END){
 		throw MisbehavingClientException();
 	}
@@ -102,5 +103,4 @@ void writeMessage(const shared_ptr<Connection>& conn, const string& s){
 	for (char c : s) {
 		conn->write(c);
 	}
-	conn->write(Protocol::ANS_END);
 }

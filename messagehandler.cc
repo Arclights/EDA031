@@ -11,6 +11,37 @@
 
 using namespace std;
 
+string translateProtocolCode(int code){
+	switch(code){
+	case Protocol::COM_LIST_NG:
+		return "list newsgroups";
+	case Protocol::COM_CREATE_NG:
+		return "delete newsgroup";
+	case Protocol::COM_DELETE_NG:
+		return "delete newsgroup";
+	case Protocol::COM_CREATE_ART:
+		return "create article";
+	case Protocol::COM_DELETE_ART:
+		return "delete article";
+	case Protocol::COM_GET_ART:
+		return "get article";
+	case Protocol::COM_END:
+		return "command end";
+	case Protocol::PAR_STRING:
+		return "string";
+	case Protocol::PAR_NUM:
+		return "number";
+	case Protocol::ERR_NG_ALREADY_EXISTS:
+		return "newsgroup already exists";
+	case Protocol::ERR_NG_DOES_NOT_EXIST:
+		return "newsgroup does not exist";
+	case Protocol::ERR_ART_DOES_NOT_EXIST:
+		return "article does not exist";
+	default:
+		return "unknown code";
+	}
+}
+
 int readByte(const shared_ptr<Connection>& conn){
 	unsigned char byte1 = conn->read();
 	return byte1;
@@ -37,7 +68,7 @@ string readString(const shared_ptr<Connection>& conn) {
 	int charsRead = 0;
 	int paramType = readByte(conn);
 	if(paramType != Protocol::PAR_STRING){
-		throw MisbehavingClientException();
+		throw MisbehavingClientException{"expected " + translateProtocolCode(Protocol::PAR_STRING) + " but got " + translateProtocolCode(paramType)};
 	}
 	int charsToRead = readInt(conn);
 	while (charsRead < charsToRead) {
@@ -51,7 +82,7 @@ string readString(const shared_ptr<Connection>& conn) {
 int readNumber(const shared_ptr<Connection>& conn){
 	int paramType = readByte(conn);
 	if(paramType != Protocol::PAR_NUM){
-		throw MisbehavingClientException();
+		throw MisbehavingClientException{"expected " + translateProtocolCode(Protocol::PAR_NUM) + " but got " + translateProtocolCode(paramType)};
 	}
 	return readInt(conn);
 }
@@ -59,14 +90,14 @@ int readNumber(const shared_ptr<Connection>& conn){
 void readEndByte(const shared_ptr<Connection>& conn){
 	int paramType = readByte(conn);
 	if(paramType != Protocol::COM_END){
-		throw MisbehavingClientException();
+		throw MisbehavingClientException{"expected " + translateProtocolCode(Protocol::COM_END) + " but got " + translateProtocolCode(paramType)};
 	}
 }
 
 void readEndByteAns(const shared_ptr<Connection>& conn){
 	int paramType = readByte(conn);
 	if(paramType != Protocol::ANS_END){
-		throw MisbehavingClientException();
+		throw MisbehavingClientException{"expected " + translateProtocolCode(Protocol::ANS_END) + " but got " + translateProtocolCode(paramType)};
 	}
 }
 

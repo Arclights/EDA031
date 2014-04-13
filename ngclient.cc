@@ -74,7 +74,7 @@ int main(int argc, char* argv[]) {
 			writeMessage(cpconn, message);
 		} else if (line[0] == commands.createNG) {
 			string stuff;
-			cout << "Creating newsgroup." << endl;
+			cout << "Creating newsgroup..." << endl;
 			message += Protocol::COM_CREATE_NG;
 			cout << "Name of the newsgroup: ";
 			getline(cin, stuff);
@@ -84,7 +84,7 @@ int main(int argc, char* argv[]) {
 		} else if (line[0] == commands.deleteNG) {
 			int deletes = -1;
 			string stuff;
-			cout << "Deleting newsgroup." << endl;
+			cout << "Deleting newsgroup..." << endl;
 			message += Protocol::COM_DELETE_NG;
 			cout << "ID of the newsgroup you want to delete: ";
 			getline(cin, stuff);
@@ -95,7 +95,8 @@ int main(int argc, char* argv[]) {
 		} else if (line[0] == commands.listArt) {
 			int listng = -1;
 			string stuff;
-			cout << "Which newsgroup?";
+			cout << "Listing articles..." << endl;
+			cout << "Which newsgroup? ";
 			getline(cin, stuff);
 			listng = stoi(stuff);
 			message += Protocol::COM_LIST_ART;
@@ -106,7 +107,7 @@ int main(int argc, char* argv[]) {
 			int grpnbr = -1;
 			string stuff;
 			message += Protocol::COM_CREATE_ART;
-			cout << "Creating article." << endl;
+			cout << "Creating article..." << endl;
 			cout << "In which newsgroup? ";
 			getline(cin, stuff);
 			grpnbr = stoi(stuff);
@@ -161,10 +162,20 @@ int main(int argc, char* argv[]) {
 			appendNumber(message, artnr);
 			message += Protocol::COM_END;
 			writeMessage(cpconn, message);
-		} else if (line[0] == commands.help && line.size() == 1) {
+		} else if (line[0] == commands.help) {
 			cout << "Available commands are:" << endl;
+			cout << "listNG" << endl;
+			cout << "createNG" << endl;
+			cout << "deleteNG" << endl;
+			cout << "listArt" << endl;
+			cout << "createArt" << endl;
+			cout << "deleteArt" << endl;
 			cout << "read" << endl;
+			cout << "exit" << endl;
 			goingGood = false;
+		} else if (line[0] == commands.exit){
+			cout << "Terminating, thank you for using me!" << endl;
+			exit(0);
 		} else {
 			cout << "Use help to show available commands." << endl;
 			goingGood = false;
@@ -191,6 +202,7 @@ int main(int argc, char* argv[]) {
 					if (readByte(cpconn) == Protocol::ANS_ACK) {
 						cout << "Newsgroup was successfully created." << endl;
 					} else {
+						readByte(cpconn);
 						cout << "Newsgroup already exist." << endl;
 					}
 
@@ -201,6 +213,7 @@ int main(int argc, char* argv[]) {
 					if (readByte(cpconn) == Protocol::ANS_ACK) {
 						cout << "Newsgroup was successfully deleted." << endl;
 					} else {
+						readByte(cpconn);
 						cout << "Newsgroup doesn't exist." << endl;
 					}
 					readEndByteAns(cpconn);
@@ -217,6 +230,7 @@ int main(int argc, char* argv[]) {
 							cout << temp << endl;
 						}
 					} else {
+						readByte(cpconn);
 						cout << "Newsgroup doesn't exist." << endl;
 					}
 
@@ -227,6 +241,7 @@ int main(int argc, char* argv[]) {
 					if (readByte(cpconn) == Protocol::ANS_ACK) {
 						cout << "Article was successfully created." << endl;
 					} else {
+						readByte(cpconn);
 						cout << "Newsgroup doesn't exist." << endl;
 					}
 
@@ -268,9 +283,6 @@ int main(int argc, char* argv[]) {
 					cout << "BLARGH" << endl;
 					break;
 				}
-
-				//string reply = readString(make_shared<Connection>(conn));
-				//cout << reply << endl;
 				cout << "Type another command: ";
 				getline(cin, command);
 			} catch (ConnectionClosedException&) {

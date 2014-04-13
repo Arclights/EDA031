@@ -19,6 +19,7 @@ struct Commands {
 	string readArt = "read"; // Reads an article
 
 	string help = "help"; // Displays all commands or how to use a certain command
+	string exit = "exit"; // Terminates the client
 
 } commands;
 

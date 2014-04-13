@@ -27,6 +27,7 @@ void handleListNG(const shared_ptr<Connection>& conn, Database& db){
 		appendNumber(message, ng.first);
 		appendString(message, ng.second);
 	}
+	message += Protocol::ANS_END;
 
 	writeMessage(conn, message);
 }
@@ -45,6 +46,7 @@ void handleCreateNG(const shared_ptr<Connection>& conn, Database& db){
 		db.addNewsGroup(groupTitle);
 		message += Protocol::ANS_ACK;
 	}
+	message += Protocol::ANS_END;
 
 	writeMessage(conn, message);
 
@@ -63,6 +65,7 @@ void handleDeleteNG(const shared_ptr<Connection>& conn, Database& db){
 		db.deleteNewsGroup(ngID);
 		message += Protocol::ANS_ACK;
 	}
+	message += Protocol::ANS_END;
 	
 	writeMessage(conn, message);
 
@@ -86,6 +89,7 @@ void handleListArt(const shared_ptr<Connection>& conn, Database& db){
 			appendString(message, art.second);
 		}
 	}
+	message += Protocol::ANS_END;
 
 	writeMessage(conn, message);
 
@@ -107,6 +111,7 @@ void handleCreateArt(const shared_ptr<Connection>& conn, Database& db){
 		db.addArticle(ngID, title, author, text);
 		message += Protocol::ANS_ACK;
 	}
+	message += Protocol::ANS_END;
 
 	writeMessage(conn, message);
 
@@ -131,6 +136,7 @@ void handleDeleteArt(const shared_ptr<Connection>& conn, Database& db){
 			message += Protocol::ANS_ACK;
 		}
 	}
+	message += Protocol::ANS_END;
 
 	writeMessage(conn, message);
 }
@@ -157,13 +163,18 @@ void handleGetArt(const shared_ptr<Connection>& conn, Database& db){
 			appendString(message, art.text);
 		}
 	}
+	message += Protocol::ANS_END;
 
 	writeMessage(conn, message);
 }
 
 int main(int argc, char* argv[]){
 	if (argc != 3) {
-		cerr << "Usage: myserver port-number [mem|disk]" << endl;
+		cerr << "Usage: myserver port-number mem|disk" << endl;
+		cerr << endl;
+		cerr << "port-number - Defines which port the server should run on" << endl;
+		cerr << "mem|disk - Defines whether the database shoud be stored in memory or on disk repectively" << endl;
+		cerr << endl;
 		exit(1);
 	}
 
@@ -230,6 +241,7 @@ int main(int argc, char* argv[]){
 				server.deregisterConnection(conn);
 				cout << "Client closed connection" << endl;
 			}catch(MisbehavingClientException e){
+				cout << "The client is misbehaving. The connection will now close" << endl;
 				conn->~Connection();
 			}
 		} else {

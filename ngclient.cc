@@ -65,14 +65,13 @@ int main(int argc, char* argv[]) {
 	getline(cin, command);
 	while (true) {
 		bool goingGood = true;
-		vector<string> line = split(command, ' '); // line is the entire line splitted on whitespace
 
 		string message = "";
-		if (line[0] == commands.listNG) {
+		if (command == commands.listNG) {
 			message += Protocol::COM_LIST_NG;
 			message += Protocol::COM_END;
 			writeMessage(cpconn, message);
-		} else if (line[0] == commands.createNG) {
+		} else if (command == commands.createNG) {
 			string stuff;
 			cout << "Creating newsgroup..." << endl;
 			message += Protocol::COM_CREATE_NG;
@@ -81,88 +80,113 @@ int main(int argc, char* argv[]) {
 			appendString(message, stuff);
 			message += Protocol::COM_END;
 			writeMessage(cpconn, message);
-		} else if (line[0] == commands.deleteNG) {
-			int deletes = -1;
-			string stuff;
-			cout << "Deleting newsgroup..." << endl;
-			message += Protocol::COM_DELETE_NG;
-			cout << "ID of the newsgroup you want to delete: ";
-			getline(cin, stuff);
-			deletes = stoi(stuff);
-			appendNumber(message, deletes);
-			message += Protocol::COM_END;
-			writeMessage(cpconn, message);
-		} else if (line[0] == commands.listArt) {
-			int listng = -1;
-			string stuff;
-			cout << "Listing articles..." << endl;
-			cout << "Which newsgroup? ";
-			getline(cin, stuff);
-			listng = stoi(stuff);
-			message += Protocol::COM_LIST_ART;
-			appendNumber(message, listng);
-			message += Protocol::COM_END;
-			writeMessage(cpconn, message);
-		} else if (line[0] == commands.createArt) {
-			int grpnbr = -1;
-			string stuff;
-			message += Protocol::COM_CREATE_ART;
-			cout << "Creating article..." << endl;
-			cout << "In which newsgroup? ";
-			getline(cin, stuff);
-			grpnbr = stoi(stuff);
-			cout << endl;
-			appendNumber(message, grpnbr);
+		} else if (command == commands.deleteNG) {
+			try {
+				int deletes = -1;
+				string stuff;
+				cout << "Deleting newsgroup..." << endl;
+				message += Protocol::COM_DELETE_NG;
+				cout << "ID of the newsgroup you want to delete: ";
+				getline(cin, stuff);
+				deletes = stoi(stuff);
+				appendNumber(message, deletes);
+				message += Protocol::COM_END;
+				writeMessage(cpconn, message);
+			} catch (invalid_argument e) {
+				cout << "Error: That is not a number" << endl;
+				goingGood = false;
+			}
+		} else if (command == commands.listArt) {
+			try {
+				int listng = -1;
+				string stuff;
+				cout << "Listing articles..." << endl;
+				cout << "Which newsgroup? ";
+				getline(cin, stuff);
+				listng = stoi(stuff);
+				message += Protocol::COM_LIST_ART;
+				appendNumber(message, listng);
+				message += Protocol::COM_END;
+				writeMessage(cpconn, message);
+			} catch (invalid_argument e) {
+				cout << "Error: That is not a number" << endl;
+				goingGood = false;
+			}
+		} else if (command == commands.createArt) {
+			try {
+				int grpnbr = -1;
+				string stuff;
+				message += Protocol::COM_CREATE_ART;
+				cout << "Creating article..." << endl;
+				cout << "In which newsgroup? ";
+				getline(cin, stuff);
+				grpnbr = stoi(stuff);
+				cout << endl;
+				appendNumber(message, grpnbr);
 
-			cout << "Title:";
-			getline(cin, stuff);
-			appendString(message, stuff);
-			cout << endl;
-			cout << "Author:";
-			getline(cin, stuff);
-			appendString(message, stuff);
-			cout << endl;
-			cout << "Text:";
-			getline(cin, stuff);
-			appendString(message, stuff);
-			cout << endl;
-			message += Protocol::COM_END;
-			writeMessage(cpconn, message);
-		} else if (line[0] == commands.deleteArt) {
-			string stuff;
-			int deleteng = -1;
-			int deleteart = -1;
-			cout << "Deleting article..." << endl;
-			cout << "From which newsgroup (ID): ";
-			getline(cin, stuff);
-			deleteng = stoi(stuff);
-			cout << endl;
-			cout << "Which article (ID): ";
-			getline(cin, stuff);
-			deleteart = stoi(stuff);
-			message += Protocol::COM_DELETE_ART;
-			appendNumber(message, deleteng);
-			appendNumber(message, deleteart);
-			message += Protocol::COM_END;
-			writeMessage(cpconn, message);
-		} else if (line[0] == commands.readArt) {
-			string stuff;
-			int newsg = -1;
-			int artnr = -1;
-			cout << "Fetching article...";
-			cout << "From which newsgroup (ID): ";
-			getline(cin, stuff);
-			newsg = stoi(stuff);
-			cout << endl;
-			cout << "Which article (ID): ";
-			getline(cin, stuff);
-			artnr = stoi(stuff);
-			message += Protocol::COM_GET_ART;
-			appendNumber(message, newsg);
-			appendNumber(message, artnr);
-			message += Protocol::COM_END;
-			writeMessage(cpconn, message);
-		} else if (line[0] == commands.help) {
+				cout << "Title:";
+				getline(cin, stuff);
+				appendString(message, stuff);
+				cout << endl;
+				cout << "Author:";
+				getline(cin, stuff);
+				appendString(message, stuff);
+				cout << endl;
+				cout << "Text:";
+				getline(cin, stuff);
+				appendString(message, stuff);
+				cout << endl;
+				message += Protocol::COM_END;
+				writeMessage(cpconn, message);
+			} catch (invalid_argument e) {
+				cout << "Error: That is not a number" << endl;
+				goingGood = false;
+			}
+		} else if (command == commands.deleteArt) {
+			try {
+				string stuff;
+				int deleteng = -1;
+				int deleteart = -1;
+				cout << "Deleting article..." << endl;
+				cout << "From which newsgroup (ID): ";
+				getline(cin, stuff);
+				deleteng = stoi(stuff);
+				cout << endl;
+				cout << "Which article (ID): ";
+				getline(cin, stuff);
+				deleteart = stoi(stuff);
+				message += Protocol::COM_DELETE_ART;
+				appendNumber(message, deleteng);
+				appendNumber(message, deleteart);
+				message += Protocol::COM_END;
+				writeMessage(cpconn, message);
+			} catch (invalid_argument e) {
+				cout << "Error: That is not a number" << endl;
+				goingGood = false;
+			}
+		} else if (command == commands.readArt) {
+			try {
+				string stuff;
+				int newsg = -1;
+				int artnr = -1;
+				cout << "Fetching article...";
+				cout << "From which newsgroup (ID): ";
+				getline(cin, stuff);
+				newsg = stoi(stuff);
+				cout << endl;
+				cout << "Which article (ID): ";
+				getline(cin, stuff);
+				artnr = stoi(stuff);
+				message += Protocol::COM_GET_ART;
+				appendNumber(message, newsg);
+				appendNumber(message, artnr);
+				message += Protocol::COM_END;
+				writeMessage(cpconn, message);
+			} catch (invalid_argument e) {
+				cout << "Error: That is not a number" << endl;
+				goingGood = false;
+			}
+		} else if (command == commands.help) {
 			cout << "Available commands are:" << endl;
 			cout << "listNG" << endl;
 			cout << "createNG" << endl;
@@ -173,7 +197,7 @@ int main(int argc, char* argv[]) {
 			cout << "read" << endl;
 			cout << "exit" << endl;
 			goingGood = false;
-		} else if (line[0] == commands.exit){
+		} else if (command == commands.exit) {
 			cout << "Terminating, thank you for using me!" << endl;
 			exit(0);
 		} else {

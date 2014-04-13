@@ -234,14 +234,14 @@ int main(int argc, char* argv[]){
 					handleGetArt(conn, *db);
 					break;
 				default:
-					throw MisbehavingClientException();
+					throw MisbehavingClientException{"Invalid command"};
 					break;
 				}
 			} catch (ConnectionClosedException&) {
 				server.deregisterConnection(conn);
 				cout << "Client closed connection" << endl;
 			}catch(MisbehavingClientException e){
-				cout << "The client is misbehaving. The connection will now close" << endl;
+				cout << "The client is misbehaving:" << endl << "\t" << e.message << endl << "The connection will now close" << endl;
 				conn->~Connection();
 			}
 		} else {

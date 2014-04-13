@@ -64,7 +64,7 @@ int main(int argc, char* argv[]) {
 	string command;
 	getline(cin, command);
 	while (true) {
-
+		bool goingGood = true;
 		vector<string> line = split(command, ' '); // line is the entire line splitted on whitespace
 
 		string message = "";
@@ -73,184 +73,213 @@ int main(int argc, char* argv[]) {
 			message += Protocol::COM_END;
 			writeMessage(cpconn, message);
 		} else if (line[0] == commands.createNG) {
-			if (line.size() == 2) {
-				message += Protocol::COM_CREATE_NG;
-				appendString(message, line[1]);
-				message += Protocol::COM_END;
-				writeMessage(cpconn, message);
-			} else {
-				cout
-						<< "Incorrect number of parameters. Should be \"createNG NAME\""
-						<< endl;
-			}
+			string stuff;
+			cout << "Creating newsgroup." << endl;
+			message += Protocol::COM_CREATE_NG;
+			cout << "Name of the newsgroup: ";
+			getline(cin, stuff);
+			appendString(message, stuff);
+			message += Protocol::COM_END;
+			writeMessage(cpconn, message);
 		} else if (line[0] == commands.deleteNG) {
 			int deletes = -1;
-			if (line.size() == 2) {
-				deletes = stoi(line[1]);
-				message += Protocol::COM_DELETE_NG;
-				appendNumber(message, deletes);
-				message += Protocol::COM_END;
-				writeMessage(cpconn, message);
-			} else {
-
-			}
+			string stuff;
+			cout << "Deleting newsgroup." << endl;
+			message += Protocol::COM_DELETE_NG;
+			cout << "ID of the newsgroup you want to delete: ";
+			getline(cin, stuff);
+			deletes = stoi(stuff);
+			appendNumber(message, deletes);
+			message += Protocol::COM_END;
+			writeMessage(cpconn, message);
 		} else if (line[0] == commands.listArt) {
 			int listng = -1;
-			if (line.size() == 2) {
-				listng = stoi(line[1]);
-				message += Protocol::COM_LIST_ART;
-				appendNumber(message, listng);
-				message += Protocol::COM_END;
-				writeMessage(cpconn, message);
-			} else {
-
-			}
+			string stuff;
+			cout << "Which newsgroup?";
+			getline(cin, stuff);
+			listng = stoi(stuff);
+			message += Protocol::COM_LIST_ART;
+			appendNumber(message, listng);
+			message += Protocol::COM_END;
+			writeMessage(cpconn, message);
 		} else if (line[0] == commands.createArt) {
 			int grpnbr = -1;
-			if (line.size() == 5) {
-				grpnbr = stoi(line[1]);
-				message += Protocol::COM_CREATE_ART;
-				appendNumber(message, grpnbr);
-				appendString(message, line[2]);
-				appendString(message, line[3]);
-				appendString(message, line[4]);
-				message += Protocol::COM_END;
-				writeMessage(cpconn, message);
-			}
+			string stuff;
+			message += Protocol::COM_CREATE_ART;
+			cout << "Creating article." << endl;
+			cout << "In which newsgroup? ";
+			getline(cin, stuff);
+			grpnbr = stoi(stuff);
+			cout << endl;
+			appendNumber(message, grpnbr);
+
+			cout << "Title:";
+			getline(cin, stuff);
+			appendString(message, stuff);
+			cout << endl;
+			cout << "Author:";
+			getline(cin, stuff);
+			appendString(message, stuff);
+			cout << endl;
+			cout << "Text:";
+			getline(cin, stuff);
+			appendString(message, stuff);
+			cout << endl;
+			message += Protocol::COM_END;
+			writeMessage(cpconn, message);
 		} else if (line[0] == commands.deleteArt) {
+			string stuff;
 			int deleteng = -1;
 			int deleteart = -1;
-			if (line.size() == 3) {
-				deleteng = stoi(line[1]);
-				deleteart = stoi(line[2]);
-				message += Protocol::COM_DELETE_ART;
-				appendNumber(message, deleteng);
-				appendNumber(message, deleteart);
-				message += Protocol::COM_END;
-				writeMessage(cpconn, message);
-			}
+			cout << "Deleting article..." << endl;
+			cout << "From which newsgroup (ID): ";
+			getline(cin, stuff);
+			deleteng = stoi(stuff);
+			cout << endl;
+			cout << "Which article (ID): ";
+			getline(cin, stuff);
+			deleteart = stoi(stuff);
+			message += Protocol::COM_DELETE_ART;
+			appendNumber(message, deleteng);
+			appendNumber(message, deleteart);
+			message += Protocol::COM_END;
+			writeMessage(cpconn, message);
 		} else if (line[0] == commands.readArt) {
+			string stuff;
 			int newsg = -1;
 			int artnr = -1;
-			if (line.size() == 3) {
-				newsg = stoi(line[1]);
-				artnr = stoi(line[2]);
-				message += Protocol::COM_GET_ART;
-				appendNumber(message, newsg);
-				appendNumber(message, artnr);
-				message += Protocol::COM_END;
-				writeMessage(cpconn, message);
-			}
+			cout << "Fetching article...";
+			cout << "From which newsgroup (ID): ";
+			getline(cin, stuff);
+			newsg = stoi(stuff);
+			cout << endl;
+			cout << "Which article (ID): ";
+			getline(cin, stuff);
+			artnr = stoi(stuff);
+			message += Protocol::COM_GET_ART;
+			appendNumber(message, newsg);
+			appendNumber(message, artnr);
+			message += Protocol::COM_END;
+			writeMessage(cpconn, message);
 		} else if (line[0] == commands.help && line.size() == 1) {
 			cout << "Available commands are:" << endl;
 			cout << "read" << endl;
+			goingGood = false;
 		} else {
 			cout << "Use help to show available commands." << endl;
+			goingGood = false;
 		}
-		try {
-			int nbrOfNG = 0;
-			switch (readByte(cpconn)) {
-			case Protocol::ANS_LIST_NG:
+		if (goingGood) {
+			try {
+				int nbrOfNG = 0;
+				switch (readByte(cpconn)) {
+				case Protocol::ANS_LIST_NG:
 
-				nbrOfNG = readNumber(cpconn);
-				cout << "Number of newsgroups: " << nbrOfNG << endl;
-				for (int i = 0; i < nbrOfNG; i++) {
-					int tempInt = readNumber(cpconn);
-					cout << tempInt << " ";
-					string temp = readString(cpconn);
-					cout << temp << endl;
-				}
-
-				readEndByteAns(cpconn);
-
-				break;
-			case Protocol::ANS_CREATE_NG:
-				if (readByte(cpconn) == Protocol::ANS_ACK) {
-					cout << "Newsgroup was successfully created." << endl;
-				} else {
-					cout << "Newsgroup already exist." << endl;
-				}
-
-				readEndByteAns(cpconn);
-
-				break;
-			case Protocol::ANS_DELETE_NG:
-				if (readByte(cpconn) == Protocol::ANS_ACK) {
-					cout << "Newsgroup was successfully deleted." << endl;
-				} else {
-					cout << "Newsgroup doesn't exist." << endl;
-				}
-				readEndByteAns(cpconn);
-				break;
-			case Protocol::ANS_LIST_ART:
-				if (readByte(cpconn) == Protocol::ANS_ACK) {
 					nbrOfNG = readNumber(cpconn);
-					cout << "There are " << nbrOfNG
-							<< " articles in this newsgroup." << endl;
+					cout << "Number of newsgroups: " << nbrOfNG << endl;
 					for (int i = 0; i < nbrOfNG; i++) {
 						int tempInt = readNumber(cpconn);
 						cout << tempInt << " ";
 						string temp = readString(cpconn);
 						cout << temp << endl;
 					}
-				} else {
-					cout << "Newsgroup doesn't exist." << endl;
-				}
 
-				readEndByteAns(cpconn);
+					readEndByteAns(cpconn);
 
-				break;
-			case Protocol::ANS_CREATE_ART:
-				if (readByte(cpconn) == Protocol::ANS_ACK) {
-					cout << "Article was successfully created." << endl;
-				} else {
-					cout << "Newsgroup doesn't exist." << endl;
-				}
-
-				readEndByteAns(cpconn);
-
-				break;
-			case Protocol::ANS_DELETE_ART:
-				if (readByte(cpconn) == Protocol::ANS_ACK) {
-					cout << "Article was successfully deleted." << endl;
-				} else {
-					if (readByte(cpconn) == Protocol::ERR_NG_DOES_NOT_EXIST) {
-						cout << "Newsgroup doesn't exist." << endl;
+					break;
+				case Protocol::ANS_CREATE_NG:
+					if (readByte(cpconn) == Protocol::ANS_ACK) {
+						cout << "Newsgroup was successfully created." << endl;
 					} else {
-						cout << "Article doesn't exist." << endl;
+						cout << "Newsgroup already exist." << endl;
 					}
-				}
 
-				readEndByteAns(cpconn);
+					readEndByteAns(cpconn);
 
-				break;
-			case Protocol::ANS_GET_ART:
-				if (readByte(cpconn) == Protocol::ANS_ACK) {
-					cout << readString(cpconn) << endl;
-					cout << readString(cpconn) << endl;
-					cout << readString(cpconn) << endl;
-				} else {
-					if (readByte(cpconn) == Protocol::ERR_NG_DOES_NOT_EXIST) {
-						cout << "Newsgroup doesn't exist." << endl;
+					break;
+				case Protocol::ANS_DELETE_NG:
+					if (readByte(cpconn) == Protocol::ANS_ACK) {
+						cout << "Newsgroup was successfully deleted." << endl;
 					} else {
-						cout << "Article doesn't exist." << endl;
+						cout << "Newsgroup doesn't exist." << endl;
 					}
+					readEndByteAns(cpconn);
+					break;
+				case Protocol::ANS_LIST_ART:
+					if (readByte(cpconn) == Protocol::ANS_ACK) {
+						nbrOfNG = readNumber(cpconn);
+						cout << "There are " << nbrOfNG
+								<< " articles in this newsgroup." << endl;
+						for (int i = 0; i < nbrOfNG; i++) {
+							int tempInt = readNumber(cpconn);
+							cout << tempInt << " ";
+							string temp = readString(cpconn);
+							cout << temp << endl;
+						}
+					} else {
+						cout << "Newsgroup doesn't exist." << endl;
+					}
+
+					readEndByteAns(cpconn);
+
+					break;
+				case Protocol::ANS_CREATE_ART:
+					if (readByte(cpconn) == Protocol::ANS_ACK) {
+						cout << "Article was successfully created." << endl;
+					} else {
+						cout << "Newsgroup doesn't exist." << endl;
+					}
+
+					readEndByteAns(cpconn);
+
+					break;
+				case Protocol::ANS_DELETE_ART:
+					if (readByte(cpconn) == Protocol::ANS_ACK) {
+						cout << "Article was successfully deleted." << endl;
+					} else {
+						if (readByte(cpconn)
+								== Protocol::ERR_NG_DOES_NOT_EXIST) {
+							cout << "Newsgroup doesn't exist." << endl;
+						} else {
+							cout << "Article doesn't exist." << endl;
+						}
+					}
+
+					readEndByteAns(cpconn);
+
+					break;
+				case Protocol::ANS_GET_ART:
+					if (readByte(cpconn) == Protocol::ANS_ACK) {
+						cout << readString(cpconn) << endl;
+						cout << readString(cpconn) << endl;
+						cout << readString(cpconn) << endl;
+					} else {
+						if (readByte(cpconn)
+								== Protocol::ERR_NG_DOES_NOT_EXIST) {
+							cout << "Newsgroup doesn't exist." << endl;
+						} else {
+							cout << "Article doesn't exist." << endl;
+						}
+					}
+
+					readEndByteAns(cpconn);
+					break;
+				default:
+					cout << "BLARGH" << endl;
+					break;
 				}
 
-				readEndByteAns(cpconn);
-				break;
-			default:
-				cout << "BLARGH" << endl;
-				break;
+				//string reply = readString(make_shared<Connection>(conn));
+				//cout << reply << endl;
+				cout << "Type another command: ";
+				getline(cin, command);
+			} catch (ConnectionClosedException&) {
+				cout << " no reply from server. Exiting." << endl;
+				exit(1);
 			}
-
-			//string reply = readString(make_shared<Connection>(conn));
-			//cout << reply << endl;
+		} else {
 			cout << "Type another command: ";
 			getline(cin, command);
-		} catch (ConnectionClosedException&) {
-			cout << " no reply from server. Exiting." << endl;
-			exit(1);
 		}
 	}
 }
